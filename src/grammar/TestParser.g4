@@ -3,41 +3,41 @@ parser grammar TestParser;
 
 options { tokenVocab=TestLexer; }
 
+prog: (expression NEWLINE)* | (declaration NEWLINE)* | (assignment NEWLINE)* ;
 
+type: primitiveType | WORD;
 
-prog: (expr NEWLINE)* | (statement NEWLINE)* ;
+declaration: type WHITESPACE WORD | assignment;
 
-type: numericType | WORD;
-
-statement: type WHITESPACE WORD ;
-
-expr:   expr ('*'|'/') expr
-    |   expr ('+'|'-') expr
-    |   NUMBER
-    |   DECIMALNUMBER
-    |   '(' expr ')'
+expression:   expression ('*'|'/') expression
+    |   expression ('+'|'-') expression
+    |  literals
+    | WORD
+    |   '(' expression ')'
     ;
+
+literals:
+NUMBER | DECIMALNUMBER ;
 
 
 numericType
-    : integralType
-    | floatingPointType
+    : 'int'
+    | 'float'
+    |
     ;
 
-integralType:
-'int' ;
-
-floatingPointType:
-'float' ;
+primitiveType
+    : numericType | 'boolean'
+    ;
 
 assignmentOperator
     : '='
     ;
 
 assignment
-    : leftHandSide assignmentOperator expr
+    : leftHandSide assignmentOperator WHITESPACE* expression
     ;
 
 leftHandSide
-    : WORD ;
+    : type WHITESPACE WORD WHITESPACE*;
 

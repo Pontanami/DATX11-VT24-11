@@ -5,6 +5,7 @@ NEWLINE : [\r\n]+ ;
 WHITESPACE  : [ \t\r\n\u000C]+ ;
 fragment DIGIT : [0-9] ;
 fragment LETTER : [a-z,A-Z] ;
+BooleanLiteral: 'true' | 'false';
 
 WORD  : (LETTER | '_')+ ;
 NUMBER : DIGIT+ ;
@@ -13,6 +14,10 @@ DECIMALNUMBER : DIGIT+ [.] DIGIT+ ;
 //Types
 INT : 'int' ;
 FLOAT : 'float' ;
+BOOLEAN : 'boolean';
+CHAR : 'char' ;
+STRING : 'string' ;
+
 
 
 // Operators
