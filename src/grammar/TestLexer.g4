@@ -18,7 +18,9 @@ BOOLEAN : 'boolean';
 CHAR : 'char' ;
 STRING : 'string' ;
 
-
+//Statements
+IF         : 'if';
+FOR        : 'for';
 
 // Operators
 ASSIGN   : '=';
@@ -46,6 +48,7 @@ BITOR    : '|';
 CARET    : '^';
 MOD      : '%';
 
+// Symbols
 LPAREN     : '(';
 RPAREN     : ')';
 LBRACE     : '{';
@@ -55,6 +58,6 @@ RBRACK     : ']';
 SEMI       : ';';
 COMMA      : ',';
 DOT        : '.';
-ELLIPSIS   : '...';
 AT         : '@';
 COLONCOLON : '::';
+
