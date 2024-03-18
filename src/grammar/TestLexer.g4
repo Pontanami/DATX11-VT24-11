@@ -1,16 +1,6 @@
 
 lexer grammar TestLexer;
 
-NEWLINE : [\r\n]+ ;
-WHITESPACE  : [ \t\r\n\u000C]+ ;
-fragment DIGIT : [0-9] ;
-fragment LETTER : [a-z,A-Z] ;
-BooleanLiteral: 'true' | 'false';
-
-WORD  : (LETTER | '_')+ ;
-NUMBER : DIGIT+ ;
-DECIMALNUMBER : DIGIT+ [.] DIGIT+ ;
-
 //Types
 INT : 'int' ;
 FLOAT : 'float' ;
@@ -21,6 +11,16 @@ STRING : 'string' ;
 //Statements
 IF         : 'if';
 FOR        : 'for';
+
+WORD  : (LETTER | '_')+ ;
+NUMBER : DIGIT+ ;
+DECIMALNUMBER : DIGIT+ [.] DIGIT+ ;
+
+fragment DIGIT : [0-9] ;
+fragment LETTER : [a-z,A-Z] ;
+BooleanLiteral: 'true' | 'false';
+
+
 
 // Operators
 ASSIGN   : '=';
@@ -61,3 +61,5 @@ DOT        : '.';
 AT         : '@';
 COLONCOLON : '::';
 
+NEWLINE : [\r\n]+ ;
+WHITESPACE  : [ \t\r\n\u000C]+ ;
