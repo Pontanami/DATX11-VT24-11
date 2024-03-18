@@ -8,6 +8,7 @@ BOOLEAN : 'boolean';
 CHAR : 'char' ;
 STRING : 'string' ;
 
+BooleanLiteral: 'true' | 'false';
 //Statements
 IF         : 'if';
 FOR        : 'for';
@@ -18,7 +19,6 @@ DECIMALNUMBER : DIGIT+ [.] DIGIT+ ;
 
 fragment DIGIT : [0-9] ;
 fragment LETTER : [a-z,A-Z] ;
-BooleanLiteral: 'true' | 'false';
 
 
 

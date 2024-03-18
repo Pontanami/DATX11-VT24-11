@@ -3,6 +3,13 @@ parser grammar AndOr_Parser;
 options { tokenVocab=TestLexer; }
 
 andExpression
+    : BooleanLiteral
+    |andExpression'&'andExpression
+    ;
+
+
+
+/*andExpression
     : equalityExpression
     | andExpression '&' equalityExpression
     ;
@@ -11,7 +18,7 @@ equalityExpression
     : BooleanLiteral
     | equalityExpression '==' equalityExpression
     | equalityExpression '!=' equalityExpression
-    ;
+    ;*/
 
 
 
