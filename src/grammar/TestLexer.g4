@@ -8,19 +8,25 @@ BOOLEAN : 'boolean';
 CHAR : 'char' ;
 STRING : 'string' ;
 
+//Keywords
+TYPE : 'type' ;
+IMPLEMENTS : 'implements' ;
+CONTAINS : 'contains' ;
+FROM : 'from' ;
+VOID : 'void' ;
+NEW : 'new' ;
+
 //Statements
 IF         : 'if';
 FOR        : 'for';
 
-WORD  : (LETTER | '_')+ ;
 NUMBER : DIGIT+ ;
 DECIMALNUMBER : DIGIT+ [.] DIGIT+ ;
 
 fragment DIGIT : [0-9] ;
 fragment LETTER : [a-z,A-Z] ;
 BooleanLiteral: 'true' | 'false';
-
-
+StringLiteral : '"' WORD* '"';
 
 // Operators
 ASSIGN   : '=';
@@ -61,5 +67,22 @@ DOT        : '.';
 AT         : '@';
 COLONCOLON : '::';
 
-NEWLINE : [\r\n]+ ;
-WHITESPACE  : [ \t\r\n\u000C]+ ;
+Identifier: IdentifierStart IdentifierPart*;
+
+fragment IdentifierStart:
+    [\u0024]
+    | [\u0041-\u005A]
+    | [\u005F]
+    | [\u0061-\u007A]
+    ;
+fragment IdentifierPart:
+    IdentifierStart
+    | [\u0030-\u0039]
+    | [\u007F-\u009F]
+    | [\u00AD]
+    | [\u0061-\u007A]
+    ;
+
+WORD  : (LETTER | '_')+ ;
+NEWLINE : [\r\n]+ -> skip;
+WHITESPACE  : [ \t\r\n\u000C]+ -> skip;
