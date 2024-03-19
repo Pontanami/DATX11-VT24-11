@@ -28,13 +28,15 @@ typeDeclaration : 'type' Identifier typeImplement?  typeBody  ;
 
 typeImplement : 'implements' Identifier ;
 
-typeBody : interfaceBlock  containsBlock? block? ;
+typeBody : interfaceBlock  containsBlock? attributesBlock? block? ;
 
 block : Identifier? '{' statement+ '}' ;
 
 interfaceBlock : '{' methodSignature+  '}' ;
 
 containsBlock : 'contains' '{' (compositeDeclaration+ )  '}' ;
+
+attributesBlock : 'attributes'  '{' (variableDeclaration+ )  '}' ;
 
 statement : assignment|declaration ;
 
@@ -65,12 +67,12 @@ methodName : Identifier ;
 
 variableList : variable (',' variable)*   ;
 
-variable :type variableId ('=' initVariable)? ;
+variable :type? variableId ('=' initVariable)? ;
 
 initVariable : expression ;
 
 variableId : Identifier ;
 
-variableDeclaration : primitiveType variableList ';'  ;
+variableDeclaration : variableList ';'  ;
 
 compositeDeclaration : variableId '=' Identifier '.' 'new' '(' variableList? ')' ';';

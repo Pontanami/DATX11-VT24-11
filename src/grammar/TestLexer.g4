@@ -15,6 +15,7 @@ CONTAINS : 'contains' ;
 FROM : 'from' ;
 VOID : 'void' ;
 NEW : 'new' ;
+ATTRIBUTES : 'attributes' ;
 
 //Statements
 IF         : 'if';
