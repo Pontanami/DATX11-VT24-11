@@ -16,6 +16,7 @@ FROM : 'from' ;
 VOID : 'void' ;
 NEW : 'new' ;
 ATTRIBUTES : 'attributes' ;
+RETURN : 'return' ;
 
 //Statements
 IF         : 'if';

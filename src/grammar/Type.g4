@@ -30,11 +30,11 @@ typeImplement : 'implements' Identifier ;
 
 typeBody : interfaceBlock  containsBlock? attributesBlock? block? ;
 
-block : Identifier? '{' statement+ '}' ;
+block : Identifier? '{' (statement+ | methodDeclaration+) '}' ;
 
 interfaceBlock : '{' methodSignature+  '}' ;
 
-containsBlock : 'contains' '{' (compositeDeclaration+ )  '}' ;
+containsBlock : 'contains' '{' (containsDeclaration+ )  '}' ;
 
 attributesBlock : 'attributes'  '{' (variableDeclaration+ )  '}' ;
 
@@ -48,6 +48,7 @@ expression:   expression ('*'|'/') expression
     |   expression ('+'|'-') expression
     |   expression ('=='|'!=') expression
     |  literals
+    | Identifier
     |   '(' expression ')'
     ;
 
@@ -55,7 +56,7 @@ declaration: variableDeclaration | type assignment;
 
 methodSignature : ownMethodSignature ';'| compositeMethodSignature ';';
 
-ownMethodSignature : methodType methodName '(' variableList? ')' | Identifier ;
+ownMethodSignature : methodType methodName '(' variableList? ')' ;
 
 compositeMethodSignature : methodType methodName '(' variableList? ')' 'from' Identifier '.' methodName '(' variableList? ')' ;
 
@@ -75,4 +76,14 @@ variableId : Identifier ;
 
 variableDeclaration : variableList ';'  ;
 
-compositeDeclaration : variableId '=' Identifier '.' 'new' '(' variableList? ')' ';';
+containsDeclaration : compositeDeclaration | aggregateDeclaration ;
+
+compositeDeclaration :  variableId '=' Identifier '.' 'new' '(' variableList? ')' ';';
+
+aggregateDeclaration : variableId '=' Identifier '(' variableList? ')' ';';
+
+methodDeclaration : methodType Identifier '(' variableList? ')' methodBlock  ;
+
+methodBlock : '{' statement+ returnStatement'}' ;
+
+returnStatement : 'return' (expression) ';' ;
