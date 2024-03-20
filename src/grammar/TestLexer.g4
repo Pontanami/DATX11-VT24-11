@@ -8,7 +8,7 @@ BOOLEAN : 'boolean';
 CHAR : 'char' ;
 STRING : 'string' ;
 
-BooleanLiteral: 'true' | 'false';
+BOOLEANLITERAL: 'true' | 'false';
 //Statements
 IF         : 'if';
 FOR        : 'for';
@@ -61,5 +61,7 @@ DOT        : '.';
 AT         : '@';
 COLONCOLON : '::';
 
-NEWLINE : [\r\n]+ ;
-WHITESPACE  : [ \t\r\n\u000C]+ ;
+// Skip gör så att parsern inte bryr sig om dessa. På så vis kan man skriva fler rader i terminalen som samma statement.
+// TODO: Lägg in ; för att avsluta ett statement.
+NEWLINE : [\r\n]+ -> skip;
+WHITESPACE  : [ \t\r\n\u000C]+ -> skip ;

@@ -2,74 +2,22 @@ parser grammar AndOr_Parser;
 
 options { tokenVocab=TestLexer; }
 
+/*TODO: Lägg in denna under en "expression" rule tillsammans med alla andra typer av expressions.
+        e.g. functionCall, addExpression, mulExpression etc.*/
 booleanExpression
-    : andExpression EOF
+    : LPAREN booleanExpression RPAREN
+    | BOOLEANLITERAL
+    | booleanExpression boolOperator booleanExpression
     ;
 
-andExpression
-    : BooleanLiteral
-    | andExpression WHITESPACE '&&' WHITESPACE andExpression
-    ;
+boolOperator: AND | OR;
 
-orExpression
-    : BooleanLiteral
-    | orExpression WHITESPACE '||' WHITESPACE orExpression
-    ;
+/* TESTER:
+(true && ((true || false) && false)) || false && (true && ((true || false) && false))
 
+((((((((true) || false) && true) || false) && true) || false) && true) || false)
 
-/*andExpression
-    : equalityExpression
-    | andExpression '&' equalityExpression
-    ;
+((true)
 
-equalityExpression
-    : BooleanLiteral
-    | equalityExpression '==' equalityExpression
-    | equalityExpression '!=' equalityExpression
-    ;*/
-
-
-
-/*
-equalityExpression
-    : relationalExpression
-    | equalityExpression '==' relationalExpression
-    | equalityExpression '!=' relationalExpression
-    ;
-
-relationalExpression
-    : shiftExpression
-    | relationalExpression '<' shiftExpression
-    | relationalExpression '>' shiftExpression
-    | relationalExpression '<=' shiftExpression
-    | relationalExpression '>=' shiftExpression
-  //  | relationalExpression 'instanceof' (referenceType | pattern)
-    ;
-
-shiftExpression
-    : additiveExpression
-    | shiftExpression '<' '<' additiveExpression
-    | shiftExpression '>' '>' additiveExpression
-    | shiftExpression '>' '>' '>' additiveExpression
-    ;
-
-additiveExpression
-    : multiplicativeExpression
-    | additiveExpression '+' multiplicativeExpression
-    | additiveExpression '-' multiplicativeExpression
-    ;
-
-multiplicativeExpression
-    : unaryExpression
-    | multiplicativeExpression '*' unaryExpression
-    | multiplicativeExpression '/' unaryExpression
-    | multiplicativeExpression '%' unaryExpression
-    ;
-
-
-unaryExpression
-    : 'int'
-    | 'float'
-    ;
+(true) true)
 */
-
