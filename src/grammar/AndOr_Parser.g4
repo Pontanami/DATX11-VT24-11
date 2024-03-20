@@ -2,11 +2,19 @@ parser grammar AndOr_Parser;
 
 options { tokenVocab=TestLexer; }
 
-andExpression
-    : BooleanLiteral
-    |andExpression'&'andExpression
+booleanExpression
+    : andExpression EOF
     ;
 
+andExpression
+    : BooleanLiteral
+    | andExpression WHITESPACE '&&' WHITESPACE andExpression
+    ;
+
+orExpression
+    : BooleanLiteral
+    | orExpression WHITESPACE '||' WHITESPACE orExpression
+    ;
 
 
 /*andExpression
