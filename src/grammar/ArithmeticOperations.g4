@@ -12,20 +12,34 @@ mathExpression
     ;
 
 intExpression
-    : INT numbers (arithmeticOperation intExpression)*
+    : INT term (arithmeticOperation intExpression)*
     | LPAREN intExpression RPAREN
-    | INT numbers
+    | INT term
     ;
 
 floatExpression
-    : FLOAT numbers (arithmeticOperation intExpression)*
-    | LPAREN intExpression RPAREN
-    | FLOAT numbers
+    : FLOAT term (arithmeticOperation floatExpression)*
+    | LPAREN floatExpression RPAREN
+    | FLOAT term
     ;
-numbers: NUMBER | DECIMALNUMBER ;
+
+term
+    : variableName
+    | numbers
+    ;
+
+numbers
+    : NUMBER
+    | DECIMALNUMBER
+    ;
+
+variableName
+    : WORD(WORD | NUMBER)*
+    ;
 
 
-arithmeticOperation: ADD
+arithmeticOperation
+    : ADD
     | SUB
     | MUL
     | DIV
