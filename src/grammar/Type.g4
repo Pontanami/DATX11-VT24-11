@@ -51,14 +51,16 @@ aggregateDeclaration : variableId '=' Identifier '(' variableList? ')' ';';
 
 methodDeclaration : methodType Identifier '(' variableList? ')' methodBody  ;
 
-//Statements
-statement : assignment SEMI|declaration SEMI|for|block ;
+//Statements ------------------------------------------------------------------------------------------------
+statement : assignment SEMI|declaration SEMI| forStatement | ifStatement | block ;
 
 assignment : fieldAccess ASSIGN expression ;
 
 returnStatement : 'return' (expression) ';' ;
 
-for: FOR LPAREN declaration SEMI expression SEMI expression RPAREN statement;
+forStatement: FOR LPAREN declaration SEMI expression SEMI expression RPAREN statement;
+
+ifStatement : IF LPAREN expression RPAREN statement ;
 
 //Expressions
 expression: literals
@@ -98,7 +100,7 @@ attributesBlock : 'attributes'  '{' (declaration SEMI)*  '}' ;
 
 methodBlock : 'methods' LBRACE methodDeclaration+ RBRACE ;
 
-block : '{' statement+ '}' ;
+block : '{' statement* '}' ;
 
 methodBody : '{' statement+ returnStatement?'}' ;
 
