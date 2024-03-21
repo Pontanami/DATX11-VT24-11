@@ -10,7 +10,7 @@ STRING : 'string' ;
 
 //Keywords
 TYPE : 'type' ;
-IMPLEMENTS : 'implements' ;
+EXTENDS : 'extends' ;
 CONTAINS : 'contains' ;
 FROM : 'from' ;
 VOID : 'void' ;

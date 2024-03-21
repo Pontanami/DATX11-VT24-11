@@ -8,7 +8,6 @@ options{
 program : typeDeclaration EOF ;
 
 //Type rules
-
 literals
     : NUMBER | DECIMALNUMBER | BooleanLiteral | StringLiteral ;
 
@@ -26,36 +25,42 @@ primitiveType
 type: Identifier | primitiveType;
 
 methodType : type | VOID ;
+methodName : Identifier ;
+variableId : Identifier ;
 
 //Declarations
+typeDeclaration : TYPE Identifier typeExtend?  typeBody  ;
+
+typeExtend : EXTENDS Identifier (',' Identifier)*;
+
+declaration: variableDeclaration | type assignment;
+
+methodSignature : ownMethodSignature ';'| containsMethodSignature ';';
+
+ownMethodSignature : methodType methodName '(' variableList? ')' ;
+
+containsMethodSignature : methodType methodName '(' variableList? ')' 'from' Identifier '.' methodName '(' variableList? ')' ;
+
+variableDeclaration : variableList;
+
+containsDeclaration : compositeDeclaration | aggregateDeclaration ;
+
+compositeDeclaration :  variableId '=' Identifier '.' 'new' '(' variableList? ')' ';';
+
+aggregateDeclaration : variableId '=' Identifier '(' variableList? ')' ';';
+
+methodDeclaration : methodType Identifier '(' variableList? ')' methodBody  ;
 
 //Statements
-
-//Expressions
-
-//Top-level blocks
-
-typeDeclaration : TYPE Identifier typeImplement?  typeBody  ;
-
-typeImplement : IMPLEMENTS Identifier (',' Identifier)*;
-
-typeBody : interfaceBlock  containsBlock? attributesBlock? methodBlock? ;
-
-block : '{' statement+ '}' ;
-
-interfaceBlock : '{' methodSignature+  '}' ;
-
-containsBlock : 'contains' '{' (containsDeclaration+ )  '}' ;
-
-attributesBlock : 'attributes'  '{' (declaration SEMI)*  '}' ;
-
-methodBlock : 'methods' LBRACE methodDeclaration+ RBRACE ;
-
 statement : assignment SEMI|declaration SEMI|for|block ;
 
 assignment : fieldAccess ASSIGN expression ;
 
+returnStatement : 'return' (expression) ';' ;
 
+for: FOR LPAREN declaration SEMI expression SEMI expression RPAREN statement;
+
+//Expressions
 expression: literals
           | fieldAccess
           | Identifier LPAREN (expression (COMMA expression)*)? RPAREN
@@ -78,15 +83,27 @@ expression: literals
           |  '(' expression ')'
           ;
 
-declaration: variableDeclaration | type assignment;
+fieldAccess :  Identifier (DOT Identifier)*;
 
-methodSignature : ownMethodSignature ';'| containsMethodSignature ';';
+methodCall : type '.' Identifier '(' variableList? ')' ';';
 
-ownMethodSignature : methodType methodName '(' variableList? ')' ;
+//Top-level blocks
+typeBody : interfaceBlock  containsBlock? attributesBlock? methodBlock? ;
 
-containsMethodSignature : methodType methodName '(' variableList? ')' 'from' Identifier '.' methodName '(' variableList? ')' ;
+interfaceBlock : '{' methodSignature+  '}' ;
 
-methodName : Identifier ;
+containsBlock : 'contains' '{' (containsDeclaration+ )  '}' ;
+
+attributesBlock : 'attributes'  '{' (declaration SEMI)*  '}' ;
+
+methodBlock : 'methods' LBRACE methodDeclaration+ RBRACE ;
+
+block : '{' statement+ '}' ;
+
+methodBody : '{' statement+ returnStatement?'}' ;
+
+
+//TODO Fixa så att vi separerar parameter lista och variabel lista
 
 variableList : variable (',' variable)*   ;
 
@@ -94,26 +111,14 @@ variable :type? variableId ('=' initVariable)? ;
 
 initVariable : expression ;
 
-variableId : Identifier ;
 
-variableDeclaration : variableList;
 
-containsDeclaration : compositeDeclaration | aggregateDeclaration ;
 
-compositeDeclaration :  variableId '=' Identifier '.' 'new' '(' variableList? ')' ';';
 
-aggregateDeclaration : variableId '=' Identifier '(' variableList? ')' ';';
 
-methodDeclaration : methodType Identifier '(' variableList? ')' methodBody  ;
 
-methodBody : '{' statement+ returnStatement?'}' ;
 
-returnStatement : 'return' (expression) ';' ;
 
-methodCall : type '.' Identifier '(' variableList? ')' ';';
 
-fieldAccess :  Identifier (DOT Identifier)*;
-
-for: FOR LPAREN declaration SEMI expression SEMI expression RPAREN statement;
 
 
