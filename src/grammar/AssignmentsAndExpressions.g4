@@ -29,12 +29,19 @@ mathExpression
     | DECIMALNUMBER;
 
 // Den här bör vara färdig i stort.
-    // Ett boolean expression skulle senare behöva kunna bestå av comparison expressions och funktioner.
+    // Ett boolean expression skulle senare behöva kunna bestå av funktioner.
 booleanExpression
     : LPAREN booleanExpression RPAREN
     | BOOLEANLITERAL
     | booleanExpression boolOperator booleanExpression
+    | comparisonExpression
     ;
+
+comparisonExpression
+    : (NUMBER | DECIMALNUMBER) comparisonOperator (NUMBER | DECIMALNUMBER)
+    ;
+
+comparisonOperator: EQUAL | NOTEQUAL | LT | GT | LE | GE;
 
 // Hänvisar till lexern snarare än att skriva in "&&" och "||" direkt här.
 boolOperator: AND | OR;
@@ -43,4 +50,7 @@ boolOperator: AND | OR;
 a = 2 + 3;
 b = true || false;
 c = false || ((true || false) && true);
+
+a = 2 > 3;
+b = (2 >3) && true;
 */
