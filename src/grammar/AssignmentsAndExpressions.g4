@@ -30,8 +30,7 @@ mathExpression
     | NUMBER
     | DECIMALNUMBER;
 
-// Den här bör vara färdig i stort.
-    // Ett boolean expression skulle senare behöva kunna bestå av funktioner.
+//Ett boolean expression skulle senare behöva kunna bestå av funktioner.
 booleanExpression
     : LPAREN booleanExpression RPAREN
     | BOOLEANLITERAL
@@ -39,10 +38,12 @@ booleanExpression
     | comparisonExpression
     ;
 
+//Ett specialfall av boolean expression.
 comparisonExpression
     : (NUMBER | DECIMALNUMBER) comparisonOperator (NUMBER | DECIMALNUMBER)
     ;
 
+// Möjliga jämförelseoperatorer.
 comparisonOperator: EQUAL | NOTEQUAL | LT | GT | LE | GE;
 
 // Hänvisar till lexern snarare än att skriva in "&&" och "||" direkt här.
@@ -55,4 +56,7 @@ boolean c = false || ((true || false) && true);
 
 boolean a = 2 > 3;
 boolean b = (2 >3) && true;
+
+
+
 */
