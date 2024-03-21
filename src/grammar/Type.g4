@@ -28,49 +28,52 @@ methodType : type | VOID ;
 methodName : Identifier ;
 variableId : Identifier ;
 
-//Declarations
+//Declarations --------------------------------------------------------------------------------------------------------
 typeDeclaration : TYPE Identifier typeExtend?  typeBody  ;
 
-typeExtend : EXTENDS Identifier (',' Identifier)*;
+typeExtend : EXTENDS Identifier ( COMMA Identifier)*;
 
 declaration: variableDeclaration | type assignment;
 
-methodSignature : ownMethodSignature ';'| containsMethodSignature ';';
+methodSignature : ownMethodSignature SEMI| containsMethodSignature SEMI;
 
-ownMethodSignature : methodType methodName '(' variableList? ')' ;
+ownMethodSignature : methodType methodName LPAREN variableList? RPAREN ;
 
-containsMethodSignature : methodType methodName '(' variableList? ')' 'from' Identifier '.' methodName '(' variableList? ')' ;
+containsMethodSignature : methodType methodName LPAREN variableList? RPAREN FROM Identifier DOT methodName LPAREN variableList? RPAREN ;
 
 variableDeclaration : variableList;
 
 containsDeclaration : compositeDeclaration | aggregateDeclaration ;
 
-compositeDeclaration :  variableId '=' Identifier '.' 'new' '(' variableList? ')' ';';
+compositeDeclaration :  variableId ASSIGN Identifier DOT NEW LPAREN variableList? RPAREN SEMI;
 
-aggregateDeclaration : variableId '=' Identifier '(' variableList? ')' ';';
+aggregateDeclaration : variableId ASSIGN Identifier LPAREN variableList? RPAREN SEMI;
 
-methodDeclaration : methodType Identifier '(' variableList? ')' methodBody  ;
+methodDeclaration : methodType Identifier LPAREN variableList? RPAREN methodBody  ;
 
-//Statements ------------------------------------------------------------------------------------------------
+//Statements -------------------------------------------------------------------------------------------------------
 statement : assignment SEMI|declaration SEMI| forStatement | ifStatement | block ;
 
 assignment : fieldAccess ASSIGN expression ;
 
-returnStatement : 'return' (expression) ';' ;
+returnStatement : RETURN (expression) SEMI ;
 
 forStatement: FOR LPAREN declaration SEMI expression SEMI expression RPAREN statement;
 
 ifStatement : IF LPAREN expression RPAREN statement ;
 
-//Expressions
+//Expressions -------------------------------------------------------------------------------------------------------
 expression: literals
           | fieldAccess
+          |  LPAREN expression RPAREN
           | Identifier LPAREN (expression (COMMA expression)*)? RPAREN
           | Identifier (INC | DEC)
           | (INC | DEC) Identifier
           | BANG expression
+          | <assoc=right> expression CARET expression
           | expression MUL expression
           | expression DIV expression
+          | expression MOD expression
           | expression ADD expression
           | expression SUB expression
           | expression LT expression
@@ -82,34 +85,33 @@ expression: literals
           | expression AND expression
           | expression OR expression
           | Identifier ASSIGN expression
-          |  '(' expression ')'
           ;
 
 fieldAccess :  Identifier (DOT Identifier)*;
 
-methodCall : type '.' Identifier '(' variableList? ')' ';';
+methodCall : type DOT Identifier LPAREN variableList? RPAREN SEMI;
 
 //Top-level blocks
 typeBody : interfaceBlock  containsBlock? attributesBlock? methodBlock? ;
 
-interfaceBlock : '{' methodSignature+  '}' ;
+interfaceBlock : LBRACE methodSignature+  RBRACE ;
 
-containsBlock : 'contains' '{' (containsDeclaration+ )  '}' ;
+containsBlock : CONTAINS LBRACE (containsDeclaration+ )  RBRACE ;
 
-attributesBlock : 'attributes'  '{' (declaration SEMI)*  '}' ;
+attributesBlock : ATTRIBUTES  LBRACE (declaration SEMI)*  RBRACE ;
 
-methodBlock : 'methods' LBRACE methodDeclaration+ RBRACE ;
+methodBlock : METHODS LBRACE methodDeclaration+ RBRACE ;
 
-block : '{' statement* '}' ;
+block : LBRACE statement* RBRACE ;
 
-methodBody : '{' statement+ returnStatement?'}' ;
+methodBody : LBRACE statement+ returnStatement? RBRACE ;
 
 
 //TODO Fixa så att vi separerar parameter lista och variabel lista
 
-variableList : variable (',' variable)*   ;
+variableList : variable (COMMA variable)*   ;
 
-variable :type? variableId ('=' initVariable)? ;
+variable :type? variableId (ASSIGN initVariable)? ;
 
 initVariable : expression ;
 
