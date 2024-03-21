@@ -6,33 +6,36 @@ parser grammar ArithmeticOperations;
 
 options { tokenVocab=TestLexer; }
 
-mathExpression
-    : intExpression
-    | floatExpression
+arithmaticAssignment:
+numericType variableName assignment arithmethicExpression ;
+
+arithmethicExpression
+    : term (arithmeticOperation arithmethicExpression)*
+    | LPAREN arithmethicExpression RPAREN
+    | term
     ;
 
-intExpression
-    : INT numbers (arithmeticOperation intExpression)*
-    | LPAREN intExpression RPAREN
-    | INT numbers
-    ;
+assignment: ASSIGN ;
 
-floatExpression
-    : FLOAT numbers (arithmeticOperation intExpression)*
-    | LPAREN intExpression RPAREN
-    | FLOAT numbers
-    ;
+term: numbers | variableName ;
+
 numbers: NUMBER | DECIMALNUMBER ;
+variableName: WORD(WORD | NUMBER)* ;
 
 
-arithmeticOperation: ADD
+arithmeticOperation
+    : ADD
     | SUB
     | MUL
     | DIV
+    | CARET
+    | MOD
     ;
 
-//en numerictype med en checker hade varit bättre, just nu är int och float hårdkodade vilket inte är så bra
-numericType: 'int' | 'float' ;
 
-
+numericType
+    : 'int'
+    | 'float'
+    |
+    ;
 
