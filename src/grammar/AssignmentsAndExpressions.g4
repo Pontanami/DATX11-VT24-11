@@ -9,8 +9,10 @@ program: statement+ EOF;
     // Avslutas alltid med semikolon.
 statement: assignment SEMI;
 
-// En sorts statement. Tänker att man senare behöver kräva en typ innan "identifier" här.
-assignment: identifier ASSIGN expression;
+// En sorts statement.
+assignment: type identifier ASSIGN expression;
+
+type: INT | FLOAT | BOOLEAN | CHAR | STRING;
 
 // Finns kanske ett bättre sätt att definiera identifiers...?
 identifier: WORD+NUMBER*WORD*;
@@ -47,10 +49,10 @@ comparisonOperator: EQUAL | NOTEQUAL | LT | GT | LE | GE;
 boolOperator: AND | OR;
 
 /* TESTER:
-a = 2 + 3;
-b = true || false;
-c = false || ((true || false) && true);
+int a = 2 + 3;
+boolean b = true || false;
+boolean c = false || ((true || false) && true);
 
-a = 2 > 3;
-b = (2 >3) && true;
+boolean a = 2 > 3;
+boolean b = (2 >3) && true;
 */
