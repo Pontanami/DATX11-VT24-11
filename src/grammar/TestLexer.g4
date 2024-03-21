@@ -26,7 +26,7 @@ NUMBER : DIGIT+ ;
 DECIMALNUMBER : DIGIT+ [.] DIGIT+ ;
 
 fragment DIGIT : [0-9] ;
-fragment LETTER : [a-z,A-Z] ;
+fragment LETTER : [a-zA-Z] ;
 BooleanLiteral: 'true' | 'false';
 StringLiteral : '"' WORD* '"';
 

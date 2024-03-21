@@ -18,6 +18,7 @@ numericType
 primitiveType
     : numericType
     | 'boolean'
+    | 'string'
     ;
 
 assignmentOperator
@@ -26,7 +27,7 @@ assignmentOperator
 
 typeDeclaration : 'type' Identifier typeImplement?  typeBody  ;
 
-typeImplement : 'implements' Identifier ;
+typeImplement : 'implements' Identifier (',' Identifier)*;
 
 typeBody : interfaceBlock  containsBlock? attributesBlock? block? ;
 
@@ -38,7 +39,7 @@ containsBlock : 'contains' '{' (containsDeclaration+ )  '}' ;
 
 attributesBlock : 'attributes'  '{' (variableDeclaration+ )  '}' ;
 
-statement : assignment|declaration ;
+statement : assignment|declaration|methodCall ;
 
 assignment : leftHandSide assignmentOperator expression ';' ;
 
@@ -54,11 +55,11 @@ expression:   expression ('*'|'/') expression
 
 declaration: variableDeclaration | type assignment;
 
-methodSignature : ownMethodSignature ';'| compositeMethodSignature ';';
+methodSignature : ownMethodSignature ';'| containsMethodSignature ';';
 
 ownMethodSignature : methodType methodName '(' variableList? ')' ;
 
-compositeMethodSignature : methodType methodName '(' variableList? ')' 'from' Identifier '.' methodName '(' variableList? ')' ;
+containsMethodSignature : methodType methodName '(' variableList? ')' 'from' Identifier '.' methodName '(' variableList? ')' ;
 
 type: Identifier | primitiveType;
 
@@ -82,8 +83,10 @@ compositeDeclaration :  variableId '=' Identifier '.' 'new' '(' variableList? ')
 
 aggregateDeclaration : variableId '=' Identifier '(' variableList? ')' ';';
 
-methodDeclaration : methodType Identifier '(' variableList? ')' methodBlock  ;
+methodDeclaration : methodType Identifier '(' variableList? ')' methodBody  ;
 
-methodBlock : '{' statement+ returnStatement'}' ;
+methodBody : '{' statement+ returnStatement?'}' ;
 
 returnStatement : 'return' (expression) ';' ;
+
+methodCall : type '.' Identifier '(' variableList? ')' ';';
