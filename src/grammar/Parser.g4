@@ -1,5 +1,5 @@
 
-parser grammar Type;
+parser grammar Parser;
 
 options{
     tokenVocab=TestLexer;
