@@ -7,27 +7,37 @@ options{
 
 program : typeDeclaration EOF ;
 
+//Type rules
+
 literals
     : NUMBER | DECIMALNUMBER | BooleanLiteral | StringLiteral ;
 
 numericType
-    : 'int'
-    | 'float'
+    : INT
+    | FLOAT
     ;
 
 primitiveType
     : numericType
-    | 'boolean'
-    | 'string'
+    | BOOLEAN
+    | STRING
     ;
 
-assignmentOperator
-    : '='
-    ;
+type: Identifier | primitiveType;
 
-typeDeclaration : 'type' Identifier typeImplement?  typeBody  ;
+methodType : type | VOID ;
 
-typeImplement : 'implements' Identifier (',' Identifier)*;
+//Declarations
+
+//Statements
+
+//Expressions
+
+//Top-level blocks
+
+typeDeclaration : TYPE Identifier typeImplement?  typeBody  ;
+
+typeImplement : IMPLEMENTS Identifier (',' Identifier)*;
 
 typeBody : interfaceBlock  containsBlock? attributesBlock? methodBlock? ;
 
@@ -37,18 +47,17 @@ interfaceBlock : '{' methodSignature+  '}' ;
 
 containsBlock : 'contains' '{' (containsDeclaration+ )  '}' ;
 
-attributesBlock : 'attributes'  '{' (variableDeclaration+ )  '}' ;
+attributesBlock : 'attributes'  '{' (declaration SEMI)*  '}' ;
 
 methodBlock : 'methods' LBRACE methodDeclaration+ RBRACE ;
 
-statement : assignment|declaration|methodCall|for|block ;
+statement : assignment SEMI|declaration SEMI|for|block ;
 
-assignment : leftHandSide assignmentOperator expression ;
+assignment : fieldAccess ASSIGN expression ;
 
-leftHandSide : Identifier;
 
 expression: literals
-          | Identifier
+          | fieldAccess
           | Identifier LPAREN (expression (COMMA expression)*)? RPAREN
           | Identifier (INC | DEC)
           | (INC | DEC) Identifier
@@ -77,10 +86,6 @@ ownMethodSignature : methodType methodName '(' variableList? ')' ;
 
 containsMethodSignature : methodType methodName '(' variableList? ')' 'from' Identifier '.' methodName '(' variableList? ')' ;
 
-type: Identifier | primitiveType;
-
-methodType : type | 'void' ;
-
 methodName : Identifier ;
 
 variableList : variable (',' variable)*   ;
@@ -91,7 +96,7 @@ initVariable : expression ;
 
 variableId : Identifier ;
 
-variableDeclaration : variableList ';'  ;
+variableDeclaration : variableList;
 
 containsDeclaration : compositeDeclaration | aggregateDeclaration ;
 
@@ -106,6 +111,8 @@ methodBody : '{' statement+ returnStatement?'}' ;
 returnStatement : 'return' (expression) ';' ;
 
 methodCall : type '.' Identifier '(' variableList? ')' ';';
+
+fieldAccess :  Identifier (DOT Identifier)*;
 
 for: FOR LPAREN declaration SEMI expression SEMI expression RPAREN statement;
 
