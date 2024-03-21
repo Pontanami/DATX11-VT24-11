@@ -3,7 +3,7 @@ parser grammar AssignmentsAndExpressions;
 options { tokenVocab=TestLexer; }
 
 // Högsta nivå. Består av minst ett statement varav alla avslutas med ";" och efter det End Of File.
-program: statement+ EOF;
+program: statement* EOF;
 
 // Näst högst nivå. Tänker att statements senare ska kunna bestå av flera saker såsom funktionsanrop.
     // Avslutas alltid med semikolon.
@@ -56,7 +56,4 @@ boolean c = false || ((true || false) && true);
 
 boolean a = 2 > 3;
 boolean b = (2 >3) && true;
-
-
-
 */
