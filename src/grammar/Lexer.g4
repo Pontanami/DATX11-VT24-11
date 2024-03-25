@@ -14,7 +14,6 @@ EXTENDS : 'extends' ;
 CONTAINS : 'contains' ;
 FROM : 'from' ;
 VOID : 'void' ;
-NEW : 'new' ;
 ATTRIBUTES : 'attributes' ;
 METHODS : 'methods' ;
 RETURN : 'return' ;
