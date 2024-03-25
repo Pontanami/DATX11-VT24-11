@@ -1,5 +1,5 @@
 
-lexer grammar TestLexer;
+lexer grammar Lexer;
 
 //Types
 INT : 'int' ;

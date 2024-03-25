@@ -2,7 +2,7 @@
 parser grammar Parser;
 
 options{
-    tokenVocab=TestLexer;
+    tokenVocab=Lexer;
 }
 
 program : typeDeclaration EOF ;
