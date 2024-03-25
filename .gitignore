@@ -34,5 +34,6 @@ gen/
 .idea/
 .out/
 
-
-
+# Haskell compiler output files
+*.o
+*.hi
