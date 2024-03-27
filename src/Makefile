@@ -23,8 +23,11 @@ antlr_gen := \
 # location of the antlr jar file
 antlr_jar := ../antlr-4.13.1-complete.jar
 
-# output location for java compilation
+# output location for java compilation (same as IntelliJ uses)
 java_out := ../out/production/DATX11-VT24-11
+
+# the java command for running the transpiler
+run_java := java -cp "${antlr_jar};${java_out}" Main
 
 # Targets
 ###########################################################
@@ -34,9 +37,9 @@ java_out := ../out/production/DATX11-VT24-11
 # default target (has to be defined before the other ones)
 default : ${java_out}/Main.class transpiler-batch
 
-# Generate the batch file that runs the transpiler 
+# Generate the batch file that runs the transpiler
 transpiler-batch:
-	echo @java -cp "${antlr_jar};${java_out}" Main %%^*> Transpiler.bat
+	echo @${run_java} %%^*> Transpiler.bat
 
 # Compile the main class
 ${java_out}/Main.class : Main.java ${antlr_gen}
@@ -46,4 +49,3 @@ ${java_out}/Main.class : Main.java ${antlr_gen}
 ${antlr_gen} : grammar/${parser}.g4 grammar/${lexer}.g4
 	java -jar ${antlr_jar} ${antlr_options} "grammar/${lexer}.g4"
 	java -jar ${antlr_jar} ${antlr_options} "grammar/${parser}.g4"
-

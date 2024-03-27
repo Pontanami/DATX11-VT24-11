@@ -271,24 +271,26 @@ optDescr = [ Option []    ["debug"]       (NoArg  enableDebug         ) "print d
 -- | Filter out and process options, return the argument.
 parseArgs :: [String] -> IO (Options, FilePath, TestSuite)
 parseArgs argv = case getOpt RequireOrder optDescr argv of
-  (o,[cfFile],[]) -> do
-    let defaultOptions = Options False False True True Nothing
-        options = foldr ($) defaultOptions o
-    when (debugFlag options)      $ writeIORef doDebug True
-    when (not $ cmpFlag  options) $ writeIORef doCmp   False
-    let testSuite    = fromMaybe (["good"],["bad"],["bad-runtime"]) $ testSuiteOption options
-        expandPath f = doesDirectoryExist f >>= \b -> if b then listTestFiles f else return [f]
-    testSuite' <- tripleM (concatMapM expandPath) testSuite
-    return (options, cfFile, testSuite')
-  (_,_,_) -> do
-    usage
-    exitFailure
+   (o,[],[])       -> buildArgs o "..\\src"
+   (o,[srcDir],[]) -> buildArgs o srcDir
+   (_,_,_)         -> usage >> exitFailure
+
+   where
+      buildArgs parsedOptions srcDir = do
+         let defaultOptions = Options False False True True Nothing
+             options = foldr ($) defaultOptions parsedOptions
+         when (debugFlag options)      $ writeIORef doDebug True
+         when (not $ cmpFlag  options) $ writeIORef doCmp   False
+         let testSuite    = fromMaybe (["good"],["bad"],["bad-runtime"]) $ testSuiteOption options
+             expandPath f = doesDirectoryExist f >>= \b -> if b then listTestFiles f else return [f]
+         testSuite' <- tripleM (concatMapM expandPath) testSuite
+         return (options, srcDir, testSuite')
 
 usage :: IO ()
 usage = do
   hPutStrLn stderr "Usage: test-transpiler [--debug] [--no-make] [--no-cmp]"
   hPutStrLn stderr "           [-g|--good FILE]... [-b|--bad FILE]... [-r|--bad-runtime FILE]..."
-  hPutStrLn stderr "           transpiler_code_directory"
+  hPutStrLn stderr "           [transpiler_code_directory]"
   exitFailure
 
 mainOpts :: Options -> FilePath -> TestSuite -> IO ()
