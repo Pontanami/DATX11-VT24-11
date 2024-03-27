@@ -1,5 +1,5 @@
-import grammar.antlr.TheLexer;
-import grammar.antlr.TheParser;
+import grammar.gen.TheLexer;
+import grammar.gen.TheParser;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -23,7 +23,7 @@ public class Main {
             TheLexer lexer = new TheLexer(stream);
             TokenStream tokenStream = new CommonTokenStream(lexer);
             TheParser parser = new TheParser(tokenStream);
-            // Ensures that the parser throws a ParseCancellationException when it can't parse
+            // Ensures that the parser throws a ParseCancellationException if it can't parse
             parser.setErrorHandler(new BailErrorStrategy());
             TheParser.ProgramContext prog = parser.program();
         } catch (IOException e) {

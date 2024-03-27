@@ -37,3 +37,6 @@ gen/
 # Haskell compiler output files
 *.o
 *.hi
+
+# auto-generated batch file for running transpiler
+src/Transpiler.bat

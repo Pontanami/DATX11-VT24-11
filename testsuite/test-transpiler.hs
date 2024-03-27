@@ -27,8 +27,7 @@ import System.IO.Unsafe
 
 -- Executable name
 executable_name :: FilePath
--- You might have to add or remove .exe here if you are using Windows
-executable_name = "Transpiler" <.> exeExtension
+executable_name = "Transpiler.bat"
 
 concatMapM :: Monad m => (a -> m [b]) -> [a] -> m [b]
 concatMapM f = fmap concat . mapM f
