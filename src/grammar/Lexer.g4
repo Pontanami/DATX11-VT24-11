@@ -22,6 +22,7 @@ RETURN : 'return' ;
 //Statements
 IF         : 'if';
 FOR        : 'for';
+WHILE      : 'while';
 
 NUMBER : DIGIT+ ;
 DECIMALNUMBER : DIGIT+ [.] DIGIT+ ;

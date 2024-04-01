@@ -62,6 +62,8 @@ forStatement: FOR LPAREN declaration SEMI expression SEMI expression RPAREN stat
 
 ifStatement : IF LPAREN expression RPAREN statement ;
 
+whileStatement : WHILE LPAREN expression RPAREN statement ;
+
 //Expressions -------------------------------------------------------------------------------------------------------
 expression: literals
           | fieldAccess
