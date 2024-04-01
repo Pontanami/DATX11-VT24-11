@@ -52,7 +52,7 @@ aggregateDeclaration : variableId ASSIGN Identifier LPAREN variableList? RPAREN 
 methodDeclaration : methodType Identifier LPAREN variableList? RPAREN methodBody  ;
 
 //Statements -------------------------------------------------------------------------------------------------------
-statement : assignment SEMI|declaration SEMI| forStatement | ifStatement | block ;
+statement : assignment SEMI|declaration SEMI| forStatement | ifStatement | switchStatement | returnStatement | block ;
 
 assignment : fieldAccess ASSIGN expression ;
 
