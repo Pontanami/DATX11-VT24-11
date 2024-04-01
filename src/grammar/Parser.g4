@@ -52,7 +52,7 @@ aggregateDeclaration : variableId ASSIGN Identifier LPAREN variableList? RPAREN 
 methodDeclaration : methodType Identifier LPAREN variableList? RPAREN methodBody  ;
 
 //Statements -------------------------------------------------------------------------------------------------------
-statement : assignment SEMI|declaration SEMI| forStatement | ifStatement | block ;
+statement : assignment SEMI|declaration SEMI| forStatement | ifStatement | returnStatement | block ;
 
 assignment : fieldAccess ASSIGN expression ;
 
@@ -60,7 +60,11 @@ returnStatement : RETURN (expression) SEMI ;
 
 forStatement: FOR LPAREN declaration SEMI expression SEMI expression RPAREN statement;
 
-ifStatement : IF LPAREN expression RPAREN statement ;
+ifStatement : (IF LPAREN expression RPAREN statement) elseIfStatememt* elseStatement? ;
+
+elseIfStatememt : ELIF LPAREN expression RPAREN statement ;
+
+elseStatement : ELSE statement ;
 
 //Expressions -------------------------------------------------------------------------------------------------------
 expression: literals
