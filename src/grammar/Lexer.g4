@@ -18,10 +18,15 @@ NEW : 'new' ;
 ATTRIBUTES : 'attributes' ;
 METHODS : 'methods' ;
 RETURN : 'return' ;
+DEFAULT : 'default' ;
+
 
 //Statements
 IF         : 'if';
 FOR        : 'for';
+SWITCH     : 'switch';
+CASE       : 'case';
+BREAK      : 'break';
 
 NUMBER : DIGIT+ ;
 DECIMALNUMBER : DIGIT+ [.] DIGIT+ ;

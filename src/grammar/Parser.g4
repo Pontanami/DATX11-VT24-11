@@ -62,6 +62,13 @@ forStatement: FOR LPAREN declaration SEMI expression SEMI expression RPAREN stat
 
 ifStatement : IF LPAREN expression RPAREN statement ;
 
+switchStatement : SWITCH LPAREN expression RPAREN LBRACE case* default? RBRACE;
+
+case : (CASE expression COLON statement BREAK SEMI) ;
+
+default : (DEFAULT COLON statement BREAK SEMI) ;
+
+
 //Expressions -------------------------------------------------------------------------------------------------------
 expression: literals
           | fieldAccess
