@@ -22,7 +22,9 @@ primitiveType
     | STRING
     ;
 
-type: Identifier | primitiveType;
+type: Identifier | primitiveType | arrayType;
+
+arrayType : (Identifier|primitiveType) LBRACK RBRACK ;
 
 methodType : type | VOID ;
 methodName : Identifier ;
@@ -33,7 +35,7 @@ typeDeclaration : TYPE Identifier typeExtend?  typeBody  ;
 
 typeExtend : EXTENDS Identifier ( COMMA Identifier)*;
 
-declaration: variableDeclaration | type assignment;
+declaration: variableDeclaration | type assignment | arrayDeclaration;
 
 methodSignature : ownMethodSignature SEMI| containsMethodSignature SEMI;
 
@@ -51,6 +53,8 @@ aggregateDeclaration : variableId ASSIGN Identifier LPAREN parameterList? RPAREN
 
 methodDeclaration : methodType Identifier LPAREN variableList? RPAREN methodBody  ;
 
+arrayDeclaration : arrayType variableId;
+
 //Statements -------------------------------------------------------------------------------------------------------
 statement : assignment SEMI| declaration SEMI| expression SEMI | forStatement | ifStatement | returnStatement | block ;
 
@@ -67,6 +71,7 @@ expression: literals
           | qualifiedIdentifier
           | methodCall
           | qualifiedIdentifier LPAREN expression RPAREN
+          | qualifiedIdentifier LBRACK expression RBRACK
           | qualifiedIdentifier (INC | DEC)
           | (INC | DEC) qualifiedIdentifier
           | BANG expression
@@ -90,20 +95,20 @@ qualifiedIdentifier :  Identifier (DOT Identifier)*;
 
 methodCall : qualifiedIdentifier LPAREN parameterList? RPAREN;
 
-//Top-level blocks
+//Top-level blocks ----------------------------------------------------------------------------------------------------
 typeBody : interfaceBlock  containsBlock? attributesBlock? methodBlock? ;
 
-interfaceBlock : LBRACE methodSignature+  RBRACE ;
+interfaceBlock : LBRACE methodSignature*  RBRACE ;
 
-containsBlock : CONTAINS LBRACE (containsDeclaration+ )  RBRACE ;
+containsBlock : CONTAINS LBRACE containsDeclaration*  RBRACE ;
 
 attributesBlock : ATTRIBUTES  LBRACE (declaration SEMI)*  RBRACE ;
 
-methodBlock : METHODS LBRACE methodDeclaration+ RBRACE ;
+methodBlock : METHODS LBRACE methodDeclaration* RBRACE ;
 
 block : LBRACE statement* RBRACE ;
 
-methodBody : LBRACE (statement+)? RBRACE ;
+methodBody : LBRACE statement* RBRACE ;
 
 
 //Var ska de här vara
