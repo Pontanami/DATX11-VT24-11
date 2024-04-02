@@ -17,6 +17,8 @@ VOID : 'void' ;
 ATTRIBUTES : 'attributes' ;
 METHODS : 'methods' ;
 RETURN : 'return' ;
+DEFAULT : 'default' ;
+
 
 //Statements
 IF         : 'if';
@@ -24,6 +26,9 @@ FOR        : 'for';
 ELIF       : 'else if';
 ELSE       : 'else';
 WHILE      : 'while';
+SWITCH     : 'switch';
+CASE       : 'case';
+BREAK      : 'break';
 
 NUMBER : DIGIT+ ;
 DECIMALNUMBER : DIGIT+ [.] DIGIT+ ;

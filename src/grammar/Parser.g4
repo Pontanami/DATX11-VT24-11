@@ -56,7 +56,7 @@ methodDeclaration : methodType Identifier LPAREN variableList? RPAREN methodBody
 arrayDeclaration : arrayType variableId;
 
 //Statements -------------------------------------------------------------------------------------------------------
-statement : assignment SEMI|declaration SEMI| forStatement | ifStatement | whileStatement | returnStatement | block ;
+statement : expression SEMI | assignment SEMI|declaration SEMI| forStatement | ifStatement | whileStatement | switchStatement | returnStatement | block ;
 
 assignment : qualifiedIdentifier ASSIGN expression ;
 
@@ -71,6 +71,13 @@ elseIfStatememt : ELIF LPAREN expression RPAREN statement ;
 elseStatement : ELSE statement ;
 
 whileStatement : WHILE LPAREN expression RPAREN statement ;
+
+switchStatement : SWITCH LPAREN expression RPAREN LBRACE case* default? RBRACE;
+
+case : (CASE expression COLON statement BREAK SEMI) ;
+
+default : (DEFAULT COLON statement BREAK SEMI) ;
+
 
 //Expressions -------------------------------------------------------------------------------------------------------
 expression: literals
