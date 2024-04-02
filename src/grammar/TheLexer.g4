@@ -1,5 +1,5 @@
 
-lexer grammar Lexer;
+lexer grammar TheLexer;
 
 //Types
 INT : 'int' ;
@@ -14,10 +14,15 @@ EXTENDS : 'extends' ;
 CONTAINS : 'contains' ;
 FROM : 'from' ;
 VOID : 'void' ;
-NEW : 'new' ;
 ATTRIBUTES : 'attributes' ;
 METHODS : 'methods' ;
 RETURN : 'return' ;
+
+PUBLISHES : 'publishes' ;
+PUBLISH : 'publish' ;
+SUBSCRIBER : 'subscriber' ;
+WORD_ADD : 'add' ;
+REMOVE : 'remove' ;
 
 //Statements
 IF         : 'if';

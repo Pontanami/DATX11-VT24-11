@@ -1,8 +1,8 @@
 
-parser grammar Parser;
+parser grammar TheParser;
 
 options{
-    tokenVocab=Lexer;
+    tokenVocab=TheLexer;
 }
 
 program : typeDeclaration EOF ;
@@ -29,9 +29,11 @@ methodName : Identifier ;
 variableId : Identifier ;
 
 //Declarations --------------------------------------------------------------------------------------------------------
-typeDeclaration : TYPE Identifier typeExtend?  typeBody  ;
+typeDeclaration : TYPE Identifier typeExtend? typePublishes? typeBody  ;
 
 typeExtend : EXTENDS Identifier ( COMMA Identifier)*;
+
+typePublishes : PUBLISHES Identifier (COMMA Identifier)* ;
 
 declaration: variableDeclaration | type assignment;
 
@@ -41,20 +43,29 @@ ownMethodSignature : methodType methodName LPAREN variableList? RPAREN ;
 
 containsMethodSignature : methodType methodName LPAREN variableList? RPAREN FROM Identifier DOT methodName LPAREN variableList? RPAREN ;
 
-variableDeclaration : variableList;
+variableDeclaration : declaredVariableList;
 
 containsDeclaration : compositeDeclaration | aggregateDeclaration ;
 
-compositeDeclaration :  variableId ASSIGN Identifier DOT NEW LPAREN variableList? RPAREN SEMI;
+compositeDeclaration :  variableId ASSIGN Identifier DOT Identifier LPAREN parameterList? RPAREN SEMI;
 
-aggregateDeclaration : variableId ASSIGN Identifier LPAREN variableList? RPAREN SEMI;
+aggregateDeclaration : variableId ASSIGN Identifier LPAREN parameterList? RPAREN SEMI;
 
 methodDeclaration : methodType Identifier LPAREN variableList? RPAREN methodBody  ;
 
 //Statements -------------------------------------------------------------------------------------------------------
-statement : assignment SEMI|declaration SEMI| forStatement | ifStatement | block ;
+statement : assignment SEMI
+          | declaration SEMI
+          | expression SEMI
+          | forStatement
+          | ifStatement
+          | returnStatement
+          | block
+          | publishStatement
+          | addSubscriberStatement
+          | removeSubscriberStatement ;
 
-assignment : fieldAccess ASSIGN expression ;
+assignment : qualifiedIdentifier ASSIGN expression ;
 
 returnStatement : RETURN (expression) SEMI ;
 
@@ -62,13 +73,17 @@ forStatement: FOR LPAREN declaration SEMI expression SEMI expression RPAREN stat
 
 ifStatement : IF LPAREN expression RPAREN statement ;
 
+publishStatement : PUBLISH expression (LPAREN Identifier RPAREN)? SEMI ;
+addSubscriberStatement : expression WORD_ADD SUBSCRIBER Identifier DOT Identifier (LPAREN Identifier RPAREN)? SEMI;
+removeSubscriberStatement : expression REMOVE SUBSCRIBER Identifier DOT Identifier (LPAREN Identifier RPAREN)? SEMI;
+
 //Expressions -------------------------------------------------------------------------------------------------------
 expression: literals
-          | fieldAccess
-          |  LPAREN expression RPAREN
-          | Identifier LPAREN (expression (COMMA expression)*)? RPAREN
-          | Identifier (INC | DEC)
-          | (INC | DEC) Identifier
+          | qualifiedIdentifier
+          | methodCall
+          | qualifiedIdentifier LPAREN expression RPAREN
+          | qualifiedIdentifier (INC | DEC)
+          | (INC | DEC) qualifiedIdentifier
           | BANG expression
           | <assoc=right> expression CARET expression
           | expression MUL expression
@@ -84,12 +99,11 @@ expression: literals
           | expression NOTEQUAL expression
           | expression AND expression
           | expression OR expression
-          | Identifier ASSIGN expression
           ;
 
-fieldAccess :  Identifier (DOT Identifier)*;
+qualifiedIdentifier :  Identifier (DOT Identifier)*;
 
-methodCall : type DOT Identifier LPAREN variableList? RPAREN SEMI;
+methodCall : qualifiedIdentifier LPAREN parameterList? RPAREN;
 
 //Top-level blocks
 typeBody : interfaceBlock  containsBlock? attributesBlock? methodBlock? ;
@@ -104,25 +118,19 @@ methodBlock : METHODS LBRACE methodDeclaration+ RBRACE ;
 
 block : LBRACE statement* RBRACE ;
 
-methodBody : LBRACE statement+ returnStatement? RBRACE ;
+methodBody : LBRACE (statement+)? RBRACE ;
 
 
-//TODO Fixa så att vi separerar parameter lista och variabel lista
+//Var ska de här vara
+
+declaredVariableList : variable (COMMA variable (ASSIGN initVariable)?)* ;
 
 variableList : variable (COMMA variable)*   ;
 
-variable :type? variableId (ASSIGN initVariable)? ;
+variable :type variableId;
 
 initVariable : expression ;
 
+parameterList : parameter (COMMA parameter)* ;
 
-
-
-
-
-
-
-
-
-
-
+parameter : expression ;
