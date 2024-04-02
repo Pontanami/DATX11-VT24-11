@@ -3,6 +3,8 @@ package java_builder;
 import java.util.ArrayList;
 import java.util.List;
 
+import static java_builder.Code.fromString;
+
 public class ClassBuilder implements Code {
     private final List<Code> imports;
     private final List<Code> modifiers;
@@ -23,31 +25,31 @@ public class ClassBuilder implements Code {
 
     /////////////////// Setters ///////////////////
 
-    public ClassBuilder addImport(String imp) { return addImport(i -> imp); }
+    public ClassBuilder addImport(String imp) { return addImport(fromString(imp)); }
     public ClassBuilder addImport(Code imp) {
         imports.add(imp);
         return this;
     }
 
-    public ClassBuilder addModifier(String modifier) { return addModifier(i -> modifier); }
+    public ClassBuilder addModifier(String modifier) { return addModifier(fromString(modifier)); }
     public ClassBuilder addModifier(Code modifier) {
         modifiers.add(modifier);
         return this;
     }
 
-    public ClassBuilder setIdentifier(String identifier) { return setIdentifier(i -> identifier); }
+    public ClassBuilder setIdentifier(String identifier) { return setIdentifier(fromString(identifier)); }
     public ClassBuilder setIdentifier(Code identifier) {
         this.identifier = identifier;
         return this;
     }
 
-    public ClassBuilder addImplementedInterface(String iface) { return addImplementedInterface(i -> iface); }
+    public ClassBuilder addImplementedInterface(String iface) { return addImplementedInterface(fromString(iface)); }
     public ClassBuilder addImplementedInterface(Code implementedInterface) {
         implementedInterfaces.add(implementedInterface);
         return this;
     }
 
-    public ClassBuilder addField(String field) { return addField(i -> i.string() + field); }
+    public ClassBuilder addField(String field) { return addField(fromString(field)); }
     public ClassBuilder addField(Code field) {
         fields.add(field);
         return this;

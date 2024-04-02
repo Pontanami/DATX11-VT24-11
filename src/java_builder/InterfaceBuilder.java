@@ -3,12 +3,14 @@ package java_builder;
 import java.util.ArrayList;
 import java.util.List;
 
+import static java_builder.Code.fromString;
+
 public class InterfaceBuilder implements Code {
     private final List<Code> imports;
     private final List<Code> modifiers;
     private Code identifier;
     private final List<Code> extendedInterfaces;
-    private final List<Code> methods;
+    private final List<MethodBuilder> methods;
 
     public InterfaceBuilder() {
         imports = new ArrayList<>();
@@ -19,30 +21,29 @@ public class InterfaceBuilder implements Code {
 
     /////////////////// Setters ///////////////////
 
-    public InterfaceBuilder addImport(String imp) { return addImport(i -> imp); }
+    public InterfaceBuilder addImport(String imp) { return addImport(fromString(imp)); }
     public InterfaceBuilder addImport(Code imp) {
         imports.add(imp);
         return this;
     }
-    public InterfaceBuilder addModifier(String modifier) { return addModifier(i -> modifier); }
+    public InterfaceBuilder addModifier(String modifier) { return addModifier(fromString(modifier)); }
     public InterfaceBuilder addModifier(Code modifier) {
         modifiers.add(modifier);
         return this;
     }
-    public InterfaceBuilder setIdentifier(String identifier) { return setIdentifier(i -> identifier); }
+    public InterfaceBuilder setIdentifier(String identifier) { return setIdentifier(fromString(identifier)); }
     public InterfaceBuilder setIdentifier(Code identifier) {
         this.identifier = identifier;
         return this;
     }
 
-    public InterfaceBuilder addExtendedInterface(String ei) { return addExtendedInterface(i -> ei); }
+    public InterfaceBuilder addExtendedInterface(String ei) { return addExtendedInterface(fromString(ei)); }
     public InterfaceBuilder addExtendedInterface(Code extendedInterface) {
         extendedInterfaces.add(extendedInterface);
         return this;
     }
 
-    public InterfaceBuilder addMethod(String method) { return addMethod(i -> i.string() + method); }
-    public InterfaceBuilder addMethod(Code method) {
+    public InterfaceBuilder addMethod(MethodBuilder method) {
         methods.add(method);
         return this;
     }
@@ -82,7 +83,7 @@ public class InterfaceBuilder implements Code {
     public List<Code> getModifiers() { return new ArrayList<>(modifiers); }
     public Code getIdentifier() { return identifier; }
     public List<Code> getExtendedInterfaces() { return new ArrayList<>(extendedInterfaces); }
-    public List<Code> getMethods() { return new ArrayList<>(methods); }
+    public List<MethodBuilder> getMethods() { return new ArrayList<>(methods); }
 
     @Override
     public String toString() {
