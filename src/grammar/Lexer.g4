@@ -23,6 +23,7 @@ IF         : 'if';
 FOR        : 'for';
 ELIF       : 'else if';
 ELSE       : 'else';
+WHILE      : 'while';
 
 NUMBER : DIGIT+ ;
 DECIMALNUMBER : DIGIT+ [.] DIGIT+ ;
