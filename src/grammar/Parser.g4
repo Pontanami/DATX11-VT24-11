@@ -64,7 +64,11 @@ returnStatement : RETURN (expression) SEMI ;
 
 forStatement: FOR LPAREN declaration SEMI expression SEMI expression RPAREN statement;
 
-ifStatement : IF LPAREN expression RPAREN statement ;
+ifStatement : (IF LPAREN expression RPAREN statement) elseIfStatememt* elseStatement? ;
+
+elseIfStatememt : ELIF LPAREN expression RPAREN statement ;
+
+elseStatement : ELSE statement ;
 
 //Expressions -------------------------------------------------------------------------------------------------------
 expression: literals
