@@ -84,34 +84,23 @@ public class MethodBuilder implements Code {
         if (identifier == null) {
             throw new IllegalStateException("Cannot generate code: Missing method identifier");
         }
-        StringBuilder result = buildHeader(indentation);
-        if (!generateBody) {
-            return result.toString();
-        }
-        Indentation nextLevel = indentation.adjustLevel(1);
-        statements.forEach(stm -> result.append(stm.toCode(nextLevel)).append("\n"));
-        return result.append(indentation.string()).append("}").toString();
-    }
-
-    private StringBuilder buildHeader(Indentation indentation) {
-        final StringBuilder header = new StringBuilder(indentation.string());
-        modifiers.forEach(mod -> header.append(mod.toCode()).append(" "));
-
-        if (returnType != null) {
-            header.append(returnType.toCode()).append(" ");
-        }
-        header.append(identifier.toCode()).append("(");
-
-        for (int i = 0; i < parameters.size(); i++) {
-            if (i > 0) header.append(", ");
-            header.append(parameters.get(i).toCode());
-        }
-
-        if (generateBody) {
-            return header.append(") {").append("\n");
-        } else {
-            return header.append(");");
-        }
+        return new CodeBuilder()
+                .beginDelimiter(" ")
+                .append(modifiers)
+                .beginConditional(returnType != null).append(returnType).endConditional()
+                .append(identifier)
+                .endDelimiter()
+                .append("(").beginDelimiter(", ").append(parameters).endDelimiter().append(")")
+                .beginConditional(!generateBody).append(";").endConditional()
+                .beginConditional(generateBody)
+                    .beginDelimiter("\n")
+                    .append(" {")
+                    .beginIndentItems(1)
+                    .append(statements)
+                    .beginIndentItems(0)
+                    .append("}")
+                .endConditional()
+                .toCode(indentation);
     }
 
     /////////////////// Getters ///////////////////

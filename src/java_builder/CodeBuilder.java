@@ -7,14 +7,17 @@ import java.util.stream.Stream;
 
 import static java_builder.Code.fromString;
 
-// Builder for putting together code fragments, supports delimiters, setting indentation and conditional appends.
+// Builder for putting together code fragments. All methods throw IllegalArgumentException if given null unless
+// the builder is in a conditional branch that isn't executed
 public class CodeBuilder implements Code {
     private List<Code> fragments;
     private Deque<Boolean> conditionalBlocks;
     private boolean indentChildren;
     private int indentDelta;
-    private Code delimiter;
-    private boolean firstDelimitedItem;
+    private Code delimiter; // null means don't use delimiter
+    private boolean firstDelimitedItem; // for remembering not to put a delimiter before the first item
+    private Code prefix; // null means don't use prefix
+    private Code suffix; // null means don't use suffix
 
     public CodeBuilder() { init(); }
     public CodeBuilder(String... fragments) {
@@ -32,47 +35,64 @@ public class CodeBuilder implements Code {
         indentDelta = 0;
         delimiter = null;
         firstDelimitedItem = false;
+        prefix = null;
+        suffix = null;
     }
 
+    public boolean isEmpty() { return fragments.isEmpty(); }
+
     public CodeBuilder append(String... fragments) {
-        return runBuilderAction(() -> Stream.of(notNull(fragments)).map(Code::fromString).forEach(this::appendCode));
+        return runBuilderAction(() -> Stream.of(throwOnNull(fragments)).map(Code::fromString).forEach(this::appendCode));
     }
 
     public CodeBuilder append(Code... fragments) {
-        return runBuilderAction(() -> Stream.of(notNull(fragments)).forEach(this::appendCode));
+        return runBuilderAction(() -> Stream.of(throwOnNull(fragments)).forEach(this::appendCode));
     }
 
     public CodeBuilder append(Collection<? extends Code> fragments) {
-        return runBuilderAction(() -> notNull(fragments).forEach(this::appendCode));
+        return runBuilderAction(() -> throwOnNull(fragments).forEach(this::appendCode));
     }
 
     public CodeBuilder append(Supplier<String> fragment) {
-        return runBuilderAction(() -> appendCode(fromString(notNull(fragment).get())));
+        return runBuilderAction(() -> appendCode(fromString(throwOnNull(fragment).get())));
+    }
+
+    public CodeBuilder append(boolean ignoreEmpty, CodeBuilder... builders) {
+        return runBuilderAction(() -> Stream.of(throwOnNull(builders)).forEach(b -> appendCode(ignoreEmpty, b)));
+    }
+
+    private void appendCode(boolean ignoreEmpty, CodeBuilder builder) {
+        throwOnNull(builder);
+        if (ignoreEmpty && builder.isEmpty()) return;
+        appendCode(builder);
     }
 
     private void appendCode(Code fragment) {
+        throwOnNull(fragment);
         if (delimiter != null) {
             if (firstDelimitedItem)
                 firstDelimitedItem = false;
             else
                 this.fragments.add(delimiter.withoutIndentation());
         }
-        this.fragments.add(indentChildren
-                ? fragment.withIndentationDelta(indentDelta)
-                : fragment.withoutIndentation()
-        );
+        if (prefix != null)
+            fragments.add(prefix);
+        fragments.add(indentChildren ? fragment.withIndentationDelta(indentDelta) : fragment.withoutIndentation());
+        if (suffix != null)
+            fragments.add(suffix);
     }
 
     // Start putting the given delimiter between items (delimiter isn't added before the next item)
     // "a,b,c,d" == new CodeBuilder().beginDelimiter(",").append("a").append("b").append("c", "d").toCode();
     public CodeBuilder beginDelimiter(String delimiter) {
-        return beginDelimiter(fromString(notNull(delimiter)));
+        return runBuilderAction(() -> setDelimiter(fromString(throwOnNull(delimiter))));
     }
 
     public CodeBuilder beginDelimiter(Code delimiter) {
-        return runBuilderAction(() -> setDelimiter(notNull(delimiter)));
+        return runBuilderAction(() -> setDelimiter(throwOnNull(delimiter)));
     }
 
+    // Stop using delimiter (the default)
     public CodeBuilder endDelimiter() {
         return runBuilderAction(() -> setDelimiter(null));
     }
@@ -82,16 +102,50 @@ public class CodeBuilder implements Code {
         this.firstDelimitedItem = delimiter != null;
     }
 
-    // if the given boolean is false, ignore all actions until a call to endConditional is made. All mutating methods
-    // are suspended except nested calls to beginConditional and endConditional
+    // start adding the given prefix to appended items (without indentation)
+    public CodeBuilder beginPrefix(String prefix) {
+        return runBuilderAction(() -> setPrefix(throwOnNull(prefix), null));
+    }
+    // start adding the given prefix to appended items (with indentation adjusted by the given delta)
+    public CodeBuilder beginPrefix(String prefix, int indentDelta) {
+        return runBuilderAction(() -> setPrefix(throwOnNull(prefix), indentDelta));
+    }
+    public CodeBuilder endPrefix() {
+        return runBuilderAction(() -> setPrefix(null, null));
+    }
+    private void setPrefix(String prefixStr, Integer indentDelta) {
+        this.prefix = prefixStr == null ? null : indentDelta == null
+                ? fromString(prefixStr).withoutIndentation()
+                : fromString(prefixStr).withIndentationDelta(indentDelta);
+    }
+
+    // start adding the given suffix to appended items (without indentation)
+    public CodeBuilder beginSuffix(String suffix) {
+        return runBuilderAction(() -> setSuffix(throwOnNull(suffix), null));
+    }
+    // start adding the given suffix to appended items (with indentation adjusted by the given delta)
+    public CodeBuilder beginSuffix(String suffix, int indentDelta) {
+        return runBuilderAction(() -> setSuffix(throwOnNull(suffix), indentDelta));
+    }
+    public CodeBuilder endSuffix() {
+        return runBuilderAction(() -> setSuffix(null, null));
+    }
+    private void setSuffix(String suffixStr, Integer indentDelta) {
+        this.suffix = suffixStr == null ? null : indentDelta == null
+                ? fromString(suffixStr).withoutIndentation()
+                : fromString(suffixStr).withIndentationDelta(indentDelta);
+    }
+
+    // Begin a conditional branch: if the given boolean is false, ignore all actions until a call to endConditional is
+    // made. All actions are suspended except nested calls to beginConditional and endConditional
     // "ac" == new CodeBuilder.append("a").beginConditional(false).append("b").endConditional().append("c").toCode();
     public CodeBuilder beginConditional(boolean includeNext) {
         conditionalBlocks.push(isActive() && includeNext);
         return this;
     }
 
-    // End the innermost conditional branch, if the number of calls to endConditional are greater than the number of
-    // calls to begin conditional an IllegalStateException is thrown
+    // End the innermost conditional branch, throws an IllegalStateException if there are no conditional branches
+    // (the number of calls to endConditional are greater than the number of calls to beginConditional)
     public CodeBuilder endConditional() {
         if (conditionalBlocks.isEmpty())
             throw new IllegalStateException("No conditional block to end");
@@ -110,7 +164,7 @@ public class CodeBuilder implements Code {
     }
 
     // ignore indentation for appended fragments (the default)
-    public CodeBuilder endIndentChildren() {
+    public CodeBuilder endIndentItems() {
         return runBuilderAction(() -> indentChildren = false);
     }
 
@@ -127,7 +181,7 @@ public class CodeBuilder implements Code {
         return indentation.string() + fragments.stream().map(c -> c.toCode(indentation)).collect(Collectors.joining());
     }
 
-    private <T> T notNull(T obj) {
+    private <T> T throwOnNull(T obj) {
         if (obj == null)
             throw new IllegalArgumentException("CodeBuilder: null argument");
         return obj;

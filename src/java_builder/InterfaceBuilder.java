@@ -53,29 +53,23 @@ public class InterfaceBuilder implements Code {
     @Override
     public String toCode(Indentation indentation) {
         if (identifier == null) {
-            throw new IllegalStateException("Cannot generate code: Missing interface identifier");
+            throw new IllegalStateException("Cannot generate code: Missing class identifier");
         }
-        final StringBuilder result = new StringBuilder(indentation.string());
+        Code header = new CodeBuilder()
+                .beginDelimiter(" ").append(modifiers).append("interface").append(identifier)
+                .beginConditional(!extendedInterfaces.isEmpty())
+                    .append("extends ").beginDelimiter(", ").append(extendedInterfaces).endDelimiter()
+                .endConditional().append(" {");
 
-        imports.forEach(imp -> result.append("import ").append(imp.toCode()).append(";\n"));
-        if (!imports.isEmpty()) result.append("\n");
-
-        modifiers.forEach(mod -> result.append(mod.toCode()).append(" "));
-        result.append("interface ").append(identifier.toCode());
-
-        if (!extendedInterfaces.isEmpty()) {
-            result.append(" extends ");
-            for (int i = 0; i < extendedInterfaces.size(); i++) {
-                if (i > 0) result.append(", ");
-                result.append(extendedInterfaces.get(i).toCode());
-            }
-        }
-        result.append(" {\n");
-
-        final Indentation nextLevel = indentation.adjustLevel(1);
-        methods.forEach(m -> result.append(m.toCode(nextLevel)).append("\n"));
-
-        return result.append(indentation.string()).append("}").toString();
+        return new CodeBuilder()
+                .beginConditional(!imports.isEmpty())
+                    .beginPrefix("import ").beginSuffix(";\n").append(imports).endPrefix().endSuffix().append("\n")
+                .endConditional()
+                .beginSuffix("\n")
+                .beginIndentItems(0).append(header)
+                .beginIndentItems(1).append(methods)
+                .beginIndentItems(0).endSuffix().append("}")
+                .toCode(indentation);
     }
 
     /////////////////// Getters ///////////////////

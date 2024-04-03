@@ -20,8 +20,9 @@ public interface Code {
         return i -> base.toCode(Indentation.noIndent());
     }
 
-    // Create a code object from a string
+    // Create a code object from a string, rejects null
     static Code fromString(String source) {
+        if (source == null) throw new IllegalArgumentException("Code.fromString: null argument");
         return new Code() {
             public String toCode(Indentation indentation) { return indentation.string() + source; }
             public String toString() { return "Code.fromString{source='" + source + "'}"; }

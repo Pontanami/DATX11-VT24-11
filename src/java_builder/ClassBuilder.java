@@ -1,6 +1,7 @@
 package java_builder;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import static java_builder.Code.fromString;
@@ -72,31 +73,24 @@ public class ClassBuilder implements Code {
         if (identifier == null) {
             throw new IllegalStateException("Cannot generate code: Missing class identifier");
         }
-        final StringBuilder result = new StringBuilder(indentation.string());
+        Code header = new CodeBuilder()
+                .beginDelimiter(" ").append(modifiers).append("class").append(identifier)
+                .beginConditional(!implementedInterfaces.isEmpty())
+                    .append("implements ").beginDelimiter(", ").append(implementedInterfaces).endDelimiter()
+                .endConditional().append(" {");
 
-        imports.forEach(imp -> result.append("import ").append(imp.toCode()).append(";\n"));
-        if (!imports.isEmpty()) result.append("\n");
+        return new CodeBuilder()
+                .beginConditional(!imports.isEmpty())
+                    .beginPrefix("import ").beginSuffix(";\n").append(imports).endPrefix().endSuffix().append("\n")
+                .endConditional()
+                .beginDelimiter("\n")
+                .beginIndentItems(0)
+                .append(header).append(true, members(fields), members(constructors), members(methods))
+                .endDelimiter().append("}").toCode(indentation);
+    }
 
-        modifiers.forEach(mod -> result.append(mod.toCode()).append(" "));
-        result.append("class ").append(identifier.toCode());
-
-        if (!implementedInterfaces.isEmpty()) {
-            result.append(" implements ");
-            for (int i = 0; i < implementedInterfaces.size(); i++) {
-                if (i > 0) result.append(", ");
-                result.append(implementedInterfaces.get(i).toCode());
-            }
-        }
-        result.append(" {\n");
-
-        final Indentation nextLevel = indentation.adjustLevel(1);
-        fields.forEach(f -> result.append(f.toCode(nextLevel)).append("\n"));
-        if (!fields.isEmpty()) result.append("\n");
-        constructors.forEach(c -> result.append(c.toCode(nextLevel)).append("\n"));
-        if (!constructors.isEmpty()) result.append("\n");
-        methods.forEach(m -> result.append(m.toCode(nextLevel)).append("\n"));
-
-        return result.append(indentation.string()).append("}").toString();
+    private CodeBuilder members(Collection<? extends Code> members) {
+        return new CodeBuilder().beginSuffix("\n").beginIndentItems(1).append(members);
     }
 
     /////////////////// Getters ///////////////////
