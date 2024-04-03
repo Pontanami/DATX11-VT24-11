@@ -30,6 +30,8 @@ methodType : type | VOID ;
 methodName : Identifier ;
 variableId : Identifier ;
 
+constructorModifier : PUBLIC | PRIVATE | SINGLETON ;
+
 //Declarations --------------------------------------------------------------------------------------------------------
 typeDeclaration : TYPE Identifier typeExtend?  typeBody  ;
 
@@ -47,9 +49,11 @@ variableDeclaration : declaredVariableList;
 
 containsDeclaration : compositeDeclaration | aggregateDeclaration ;
 
-compositeDeclaration :  variableId ASSIGN Identifier DOT Identifier LPAREN parameterList? RPAREN SEMI;
+compositeDeclaration :  variableId ASSIGN Identifier DOT Identifier LPAREN parameterList? RPAREN SEMI ;
 
-aggregateDeclaration : variableId ASSIGN Identifier LPAREN parameterList? RPAREN SEMI;
+aggregateDeclaration : variableId ASSIGN Identifier LPAREN parameterList? RPAREN SEMI ;
+
+constructorDeclaration : constructorModifier? Identifier LPAREN variableList? RPAREN SEMI;
 
 methodDeclaration : methodType Identifier LPAREN variableList? RPAREN methodBody  ;
 
@@ -58,7 +62,7 @@ arrayDeclaration : arrayType variableId;
 //Statements -------------------------------------------------------------------------------------------------------
 statement : expression SEMI | assignment SEMI|declaration SEMI| forStatement | ifStatement | whileStatement | switchStatement | returnStatement | block ;
 
-assignment : qualifiedIdentifier ASSIGN expression ;
+assignment : qualifiedIdentifier ASSIGN expression  ;
 
 returnStatement : RETURN (expression) SEMI ;
 
@@ -109,13 +113,15 @@ qualifiedIdentifier :  Identifier (DOT Identifier)*;
 methodCall : qualifiedIdentifier LPAREN parameterList? RPAREN;
 
 //Top-level blocks ----------------------------------------------------------------------------------------------------
-typeBody : interfaceBlock  containsBlock? attributesBlock? methodBlock? ;
+typeBody : interfaceBlock  containsBlock? constructorsBlock? attributesBlock? methodBlock? ;
 
 interfaceBlock : LBRACE methodSignature*  RBRACE ;
 
 containsBlock : CONTAINS LBRACE containsDeclaration*  RBRACE ;
 
 attributesBlock : ATTRIBUTES  LBRACE (declaration SEMI)*  RBRACE ;
+
+constructorsBlock : CONSTRUCTORS LBRACE constructorDeclaration* RBRACE ;
 
 methodBlock : METHODS LBRACE methodDeclaration* RBRACE ;
 

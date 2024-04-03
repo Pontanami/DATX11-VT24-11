@@ -15,9 +15,15 @@ CONTAINS : 'contains' ;
 FROM : 'from' ;
 VOID : 'void' ;
 ATTRIBUTES : 'attributes' ;
+CONSTRUCTORS : 'constructors' ;
 METHODS : 'methods' ;
 RETURN : 'return' ;
 DEFAULT : 'default' ;
+SINGLETON : 'singleton' ;
+
+//Modifiers
+PUBLIC : 'public' ;
+PRIVATE : 'private' ;
 
 
 //Statements
