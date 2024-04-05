@@ -1,8 +1,0 @@
-type TrafficController publishes RoadRepairEvent, AccidentEvent {
-    void redirectTraffic();
-}
-methods {
-    void redirectTraffic() {
-        publish RoadRepairEvent.new();
-    }
-}

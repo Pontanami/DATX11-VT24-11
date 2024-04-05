@@ -62,13 +62,10 @@ public class InterfaceBuilder implements Code {
                 .endConditional().append(" {");
 
         return new CodeBuilder()
-                .beginConditional(!imports.isEmpty())
-                    .beginPrefix("import ").beginSuffix(";\n").append(imports).endPrefix().endSuffix().append("\n")
-                .endConditional()
-                .beginSuffix("\n")
-                .beginIndentItems(0).append(header)
-                .beginIndentItems(1).append(methods)
-                .beginIndentItems(0).endSuffix().append("}")
+                .beginPrefix("import ").beginSuffix(";\n").append(imports).endPrefix().endSuffix()
+                .appendLine(0, header)
+                .appendLine(1, methods)
+                .appendLine(0, "}")
                 .toCode(indentation);
     }
 

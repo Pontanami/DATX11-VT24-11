@@ -1,7 +1,6 @@
 package java_builder;
 
 import java.util.*;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -10,10 +9,14 @@ import static java_builder.Code.fromString;
 // Builder for putting together code fragments. All methods throw IllegalArgumentException if given null unless
 // the builder is in a conditional branch that isn't executed
 public class CodeBuilder implements Code {
+    private static final Code NEW_LINE = new Code() {
+        public String toCode() { return "\n"; }
+        public String toCode(Indentation indentation) { return "\n"; }
+        public String toString() { return "[NEW_LINE]"; }
+    };
+
     private List<Code> fragments;
     private Deque<Boolean> conditionalBlocks;
-    private boolean indentChildren;
-    private int indentDelta;
     private Code delimiter; // null means don't use delimiter
     private boolean firstDelimitedItem; // for remembering not to put a delimiter before the first item
     private Code prefix; // null means don't use prefix
@@ -31,8 +34,6 @@ public class CodeBuilder implements Code {
     private void init() {
         fragments = new ArrayList<>();
         conditionalBlocks = new ArrayDeque<>();
-        indentChildren = false;
-        indentDelta = 0;
         delimiter = null;
         firstDelimitedItem = false;
         prefix = null;
@@ -42,42 +43,79 @@ public class CodeBuilder implements Code {
     public boolean isEmpty() { return fragments.isEmpty(); }
 
     public CodeBuilder append(String... fragments) {
-        return runBuilderAction(() -> Stream.of(throwOnNull(fragments)).map(Code::fromString).forEach(this::appendCode));
+        return runBuilderAction(() -> {
+            for (String s : throwOnNull(fragments))
+                appendCode(Code.fromString(s));
+        });
+    }
+    // append each fragment on a new line with the given change in indentation (must be >= 0)
+    public CodeBuilder appendLine(int indentDelta, String... fragments) {
+        return runBuilderAction(() -> {
+            for (String line : throwOnNull(fragments))
+                appendCode(fromString(line), indentDelta);
+        });
     }
 
     public CodeBuilder append(Code... fragments) {
-        return runBuilderAction(() -> Stream.of(throwOnNull(fragments)).forEach(this::appendCode));
+        return runBuilderAction(() -> {
+            for (Code code : throwOnNull(fragments))
+                appendCode(code);
+        });
+    }
+    public CodeBuilder appendLine(int indentDelta, Code... fragments) {
+        return runBuilderAction(() -> {
+            for (Code f : throwOnNull(fragments))
+                appendCode(f, indentDelta);
+        });
     }
 
     public CodeBuilder append(Collection<? extends Code> fragments) {
         return runBuilderAction(() -> throwOnNull(fragments).forEach(this::appendCode));
     }
-
-    public CodeBuilder append(Supplier<String> fragment) {
-        return runBuilderAction(() -> appendCode(fromString(throwOnNull(fragment).get())));
+    public CodeBuilder appendLine(int indentDelta, Collection<? extends Code> fragments) {
+        return runBuilderAction(() -> throwOnNull(fragments).forEach(line -> appendCode(line, indentDelta)));
     }
 
     public CodeBuilder append(boolean ignoreEmpty, CodeBuilder... builders) {
-        return runBuilderAction(() -> Stream.of(throwOnNull(builders)).forEach(b -> appendCode(ignoreEmpty, b)));
+        return runBuilderAction(() -> {
+            for (CodeBuilder b : throwOnNull(builders))
+                appendCode(ignoreEmpty, b);
+        });
+    }
+    public CodeBuilder appendLine(boolean ignoreEmpty, int indentDelta, CodeBuilder... builders) {
+        return runBuilderAction(() -> {
+            for (CodeBuilder b : throwOnNull(builders))
+                appendCode(ignoreEmpty, indentDelta, b);
+        });
     }
 
     private void appendCode(boolean ignoreEmpty, CodeBuilder builder) {
+        appendCode(ignoreEmpty, null, builder);
+    }
+    private void appendCode(boolean ignoreEmpty, Integer indentDelta, CodeBuilder builder) {
         throwOnNull(builder);
         if (ignoreEmpty && builder.isEmpty()) return;
-        appendCode(builder);
+        appendCode(builder, indentDelta);
     }
-
     private void appendCode(Code fragment) {
+        appendCode(fragment, null);
+    }
+    private void appendCode(Code fragment, Integer indentDelta) {
         throwOnNull(fragment);
+        boolean onNewLine = indentDelta != null;
+        if (onNewLine && indentDelta < 0)
+            throw new IllegalArgumentException("indentDelta < 0");
         if (delimiter != null) {
             if (firstDelimitedItem)
                 firstDelimitedItem = false;
             else
                 this.fragments.add(delimiter.withoutIndentation());
         }
+        if (onNewLine && !isEmpty())
+            fragments.add(NEW_LINE);
         if (prefix != null)
             fragments.add(prefix);
-        fragments.add(indentChildren ? fragment.withIndentationDelta(indentDelta) : fragment.withoutIndentation());
+        fragments.add(onNewLine ? fragment.withIndentationDelta(indentDelta) : fragment.withoutIndentation());
         if (suffix != null)
             fragments.add(suffix);
     }
@@ -85,7 +123,8 @@ public class CodeBuilder implements Code {
     // Start putting the given delimiter between items (delimiter isn't added before the next item)
     // "a,b,c,d" == new CodeBuilder().beginDelimiter(",").append("a").append("b").append("c", "d").toCode();
     public CodeBuilder beginDelimiter(String delimiter) {
-        return runBuilderAction(() -> setDelimiter(fromString(throwOnNull(delimiter))));
+        if (throwOnNull(delimiter).isEmpty()) return endDelimiter();
+        return beginDelimiter(fromString(delimiter));
     }
 
     public CodeBuilder beginDelimiter(Code delimiter) {
@@ -104,36 +143,28 @@ public class CodeBuilder implements Code {
 
     // start adding the given prefix to appended items (without indentation)
     public CodeBuilder beginPrefix(String prefix) {
-        return runBuilderAction(() -> setPrefix(throwOnNull(prefix), null));
+        return beginPrefix(fromString(throwOnNull(prefix)));
     }
-    // start adding the given prefix to appended items (with indentation adjusted by the given delta)
-    public CodeBuilder beginPrefix(String prefix, int indentDelta) {
-        return runBuilderAction(() -> setPrefix(throwOnNull(prefix), indentDelta));
+    // start adding the given prefix to appended items (without indentation)
+    public CodeBuilder beginPrefix(Code prefix) {
+        return runBuilderAction(() -> this.prefix = throwOnNull(prefix).withoutIndentation());
     }
+    // stop adding prefixes to appended items (the default)
     public CodeBuilder endPrefix() {
-        return runBuilderAction(() -> setPrefix(null, null));
-    }
-    private void setPrefix(String prefixStr, Integer indentDelta) {
-        this.prefix = prefixStr == null ? null : indentDelta == null
-                ? fromString(prefixStr).withoutIndentation()
-                : fromString(prefixStr).withIndentationDelta(indentDelta);
+        return runBuilderAction(() -> prefix = null);
     }
 
     // start adding the given suffix to appended items (without indentation)
     public CodeBuilder beginSuffix(String suffix) {
-        return runBuilderAction(() -> setSuffix(throwOnNull(suffix), null));
+        return beginSuffix(fromString(throwOnNull(suffix)));
     }
-    // start adding the given suffix to appended items (with indentation adjusted by the given delta)
-    public CodeBuilder beginSuffix(String suffix, int indentDelta) {
-        return runBuilderAction(() -> setSuffix(throwOnNull(suffix), indentDelta));
+    // start adding the given suffix to appended items (without indentation)
+    public CodeBuilder beginSuffix(Code suffix) {
+        return runBuilderAction(() -> this.suffix = throwOnNull(suffix).withoutIndentation());
     }
+    // stop adding suffixes to appended items (the default)
     public CodeBuilder endSuffix() {
-        return runBuilderAction(() -> setSuffix(null, null));
-    }
-    private void setSuffix(String suffixStr, Integer indentDelta) {
-        this.suffix = suffixStr == null ? null : indentDelta == null
-                ? fromString(suffixStr).withoutIndentation()
-                : fromString(suffixStr).withIndentationDelta(indentDelta);
+        return runBuilderAction(() -> this.suffix = null);
     }
 
     // Begin a conditional branch: if the given boolean is false, ignore all actions until a call to endConditional is
@@ -151,21 +182,6 @@ public class CodeBuilder implements Code {
             throw new IllegalStateException("No conditional block to end");
         conditionalBlocks.pop();
         return this;
-    }
-
-    // Start using indentation on appended fragments, the given delta is used to increase indentation, must be >= 0
-    public CodeBuilder beginIndentItems(int indentDelta) {
-        if (indentDelta < 0)
-            throw new IllegalArgumentException("indentDelta < 0");
-        return runBuilderAction(() -> {
-            this.indentChildren = true;
-            this.indentDelta = indentDelta;
-        });
-    }
-
-    // ignore indentation for appended fragments (the default)
-    public CodeBuilder endIndentItems() {
-        return runBuilderAction(() -> indentChildren = false);
     }
 
     private CodeBuilder runBuilderAction(Runnable action) {

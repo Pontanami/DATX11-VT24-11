@@ -93,12 +93,9 @@ public class MethodBuilder implements Code {
                 .append("(").beginDelimiter(", ").append(parameters).endDelimiter().append(")")
                 .beginConditional(!generateBody).append(";").endConditional()
                 .beginConditional(generateBody)
-                    .beginDelimiter("\n")
                     .append(" {")
-                    .beginIndentItems(1)
-                    .append(statements)
-                    .beginIndentItems(0)
-                    .append("}")
+                    .appendLine(1, statements)
+                    .appendLine(0, "}")
                 .endConditional()
                 .toCode(indentation);
     }
@@ -110,7 +107,7 @@ public class MethodBuilder implements Code {
     public List<Code> getModifiers() { return new ArrayList<>(modifiers); }
     public List<Code> getParameters() { return new ArrayList<>(parameters); }
     public List<Code> getStatements() { return new ArrayList<>(statements); }
-    public boolean generatesBody()    { return generateBody; }
+    public boolean generatesBody() { return generateBody; }
 
     @Override
     public String toString() {

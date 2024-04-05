@@ -80,17 +80,16 @@ public class ClassBuilder implements Code {
                 .endConditional().append(" {");
 
         return new CodeBuilder()
-                .beginConditional(!imports.isEmpty())
-                    .beginPrefix("import ").beginSuffix(";\n").append(imports).endPrefix().endSuffix().append("\n")
-                .endConditional()
+                .beginPrefix("import ").beginSuffix(";\n").append(imports).endPrefix().endSuffix()
+                .appendLine(0, header)
                 .beginDelimiter("\n")
-                .beginIndentItems(0)
-                .append(header).append(true, members(fields), members(constructors), members(methods))
-                .endDelimiter().append("}").toCode(indentation);
+                .appendLine(true, 0, members(fields), members(constructors), members(methods))
+                .endDelimiter().appendLine(0, "}")
+                .toCode(indentation);
     }
 
     private CodeBuilder members(Collection<? extends Code> members) {
-        return new CodeBuilder().beginSuffix("\n").beginIndentItems(1).append(members);
+        return new CodeBuilder().appendLine(1, members);
     }
 
     /////////////////// Getters ///////////////////
