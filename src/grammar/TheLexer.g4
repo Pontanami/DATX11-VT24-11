@@ -21,6 +21,12 @@ RETURN : 'return' ;
 DEFAULT : 'default' ;
 SINGLETON : 'singleton' ;
 
+PUBLISHES : 'publishes' ;
+PUBLISH : 'publish' ;
+SUBSCRIBER : 'subscriber' ;
+ADD : 'add' ;
+REMOVE : 'remove' ;
+
 //Modifiers
 PUBLIC : 'public' ;
 PRIVATE : 'private' ;
@@ -61,8 +67,8 @@ AND      : '&&';
 OR       : '||';
 INC      : '++';
 DEC      : '--';
-ADD      : '+';
-SUB      : '-';
+PLUS     : '+';
+MINUS    : '-';
 MUL      : '*';
 DIV      : '/';
 BITAND   : '&';
