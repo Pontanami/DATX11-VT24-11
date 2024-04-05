@@ -62,7 +62,13 @@ arrayDeclaration : arrayType variableId;
 //Statements -------------------------------------------------------------------------------------------------------
 statement : expression SEMI | assignment SEMI|declaration SEMI| forStatement | ifStatement | whileStatement | switchStatement | returnStatement | block ;
 
-assignment : qualifiedIdentifier ASSIGN expression  ;
+assignment : qualifiedIdentifier ASSIGN (expression | arrayAssignement) ;
+
+arrayAssignement : arrayInitWithLength | arrayInitWithValues ;
+
+arrayInitWithValues : LBRACE literals (COMMA literals)* RBRACE ;
+
+arrayInitWithLength : type LBRACK expression RBRACK ;
 
 returnStatement : RETURN (expression) SEMI ;
 
@@ -128,7 +134,6 @@ methodBlock : METHODS LBRACE methodDeclaration* RBRACE ;
 block : LBRACE statement* RBRACE ;
 
 methodBody : LBRACE statement* RBRACE ;
-
 
 //Var ska de här vara
 

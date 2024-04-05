@@ -88,7 +88,6 @@ Identifier: IdentifierStart IdentifierPart*;
 fragment IdentifierStart:
     [\u0024]
     | [\u0041-\u005A]
-    | [\u005F]
     | [\u0061-\u007A]
     ;
 fragment IdentifierPart:
