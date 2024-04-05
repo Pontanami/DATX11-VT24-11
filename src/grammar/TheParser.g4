@@ -33,9 +33,11 @@ variableId : Identifier ;
 constructorModifier : PUBLIC | PRIVATE | SINGLETON ;
 
 //Declarations --------------------------------------------------------------------------------------------------------
-typeDeclaration : TYPE Identifier typeExtend?  typeBody  ;
+typeDeclaration : TYPE Identifier typeExtend? typePublishes? typeBody  ;
 
 typeExtend : EXTENDS Identifier ( COMMA Identifier)*;
+
+typePublishes : PUBLISHES Identifier (COMMA Identifier)* ;
 
 declaration: variableDeclaration | type assignment | arrayDeclaration;
 
@@ -60,7 +62,19 @@ methodDeclaration : methodType Identifier LPAREN variableList? RPAREN methodBody
 arrayDeclaration : arrayType variableId;
 
 //Statements -------------------------------------------------------------------------------------------------------
-statement : expression SEMI | assignment SEMI|declaration SEMI| forStatement | ifStatement | whileStatement | switchStatement | returnStatement | block ;
+statement : expression SEMI
+          | assignment SEMI
+          | declaration SEMI
+          | forStatement
+          | ifStatement
+          | whileStatement
+          | switchStatement
+          | returnStatement
+          | block
+          | publishStatement
+          | addSubscriberStatement
+          | removeSubscriberStatement
+          ;
 
 assignment : qualifiedIdentifier ASSIGN (expression | arrayAssignement) ;
 
@@ -88,6 +102,11 @@ case : (CASE expression COLON statement BREAK SEMI) ;
 
 default : (DEFAULT COLON statement BREAK SEMI) ;
 
+publishStatement : PUBLISH expression (LPAREN Identifier RPAREN)? SEMI ;
+
+addSubscriberStatement : expression WORD_ADD SUBSCRIBER Identifier DOT Identifier (LPAREN Identifier RPAREN)? SEMI;
+
+removeSubscriberStatement : expression REMOVE SUBSCRIBER Identifier DOT Identifier (LPAREN Identifier RPAREN)? SEMI;
 
 //Expressions -------------------------------------------------------------------------------------------------------
 expression: literals
