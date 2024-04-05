@@ -121,8 +121,8 @@ expression: literals
           | expression MUL expression
           | expression DIV expression
           | expression MOD expression
-          | expression ADD expression
-          | expression SUB expression
+          | expression PLUS expression
+          | expression MINUS expression
           | expression LT expression
           | expression LE expression
           | expression GT expression
