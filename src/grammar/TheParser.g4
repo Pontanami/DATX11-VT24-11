@@ -104,7 +104,7 @@ default : (DEFAULT COLON statement BREAK SEMI) ;
 
 publishStatement : PUBLISH expression (LPAREN Identifier RPAREN)? SEMI ;
 
-addSubscriberStatement : expression WORD_ADD SUBSCRIBER Identifier DOT Identifier (LPAREN Identifier RPAREN)? SEMI;
+addSubscriberStatement : expression ADD SUBSCRIBER Identifier DOT Identifier (LPAREN Identifier RPAREN)? SEMI;
 
 removeSubscriberStatement : expression REMOVE SUBSCRIBER Identifier DOT Identifier (LPAREN Identifier RPAREN)? SEMI;
 
