@@ -1,15 +1,16 @@
 package transpiler.visitors;
 
+import grammar.gen.TheLexer;
 import grammar.gen.TheParser;
 import grammar.gen.TheParserBaseVisitor;
-import java_builder.Code;
 import java_builder.CodeBuilder;
 import org.antlr.v4.runtime.tree.RuleNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
+import transpiler.Environment;
 
-// Approximately recreates the source code, ignoring formatting
+// Approximately recreates the source code, ignoring formatting,
 // useful when java syntax and [language name] syntax are the same
-public class OneToOneTranspiler extends TheParserBaseVisitor<String> {
+public class DefaultTranspiler extends TheParserBaseVisitor<String> {
 
     @Override
     public String visitChildren(RuleNode node) {
@@ -21,11 +22,12 @@ public class OneToOneTranspiler extends TheParserBaseVisitor<String> {
         return concatChildren(ctx, ""); // don't put spaces around tokens in qualified ids like 'obj.x.y'
     }
 
-    // TODO: (probably not very important) override default delimiter for some cases
-
     @Override
     public String visitTerminal(TerminalNode node) {
-        return node.toString();
+        if (node.getSymbol().getType() == TheLexer.Identifier)
+            return Environment.escapeJavaKeyword(node.toString());
+        else
+            return node.toString();
     }
 
     private String concatChildren(RuleNode node, String delimiter) {

@@ -1,17 +1,13 @@
 package transpiler;
 
 import java.util.*;
-import java.util.function.BiConsumer;
 
-import grammar.gen.*;
 import java_builder.*;
 import org.antlr.v4.runtime.tree.ParseTree;
 import transpiler.tasks.TaskQueue;
-import transpiler.tasks.TaskQueue.Priority;
-import transpiler.tasks.TranspilerTask;
 
 public class Transpiler {
-    private final TranspilerState state;
+    private final State state;
 
     public Transpiler() {
         state = new State();
@@ -21,23 +17,26 @@ public class Transpiler {
         state.addSource(fileName, source);
     }
 
-    // Transpile all the sources, return a map where the keys are output file names, and the values are java code
-    public Map<String, String> transpile() {
+    // Transpile all the sources
+    public TranspilerOutput transpile() {
+        TaskQueue taskQueue = new TaskQueue();
 
-        // TODO: transpile
+        // TODO: create visitors and transpile, send the task queue to visitors that need it
 
-        Map<String, String> output = new HashMap<>();
-        Indentation indent = new SpaceIndentation(3);
-        state.forEachOutput((id, topLevelDef) -> output.put(id + ".java", topLevelDef.toCode(indent)));
-        return output;
+        taskQueue.runTasks(state);
+        return state.createOutput(new SpaceIndentation(3));
     }
 
 
     private static class State implements TranspilerState {
         private final Map<String, ClassBuilder> classes = new HashMap<>();
         private final Map<String, InterfaceBuilder> interfaces = new HashMap<>();
-        private final Map<String, ParseTree> sources = new HashMap<>();
+        private final Map<String, ParseTree> sources = new LinkedHashMap<>();
+        private String mainClass;
 
+        public String lookupMainClassId() {
+            return mainClass;
+        }
         public ClassBuilder lookupClass(String identifier) {
             return classes.get(identifier);
         }
@@ -48,6 +47,9 @@ public class Transpiler {
             return sources.get(fileName);
         }
 
+        public void setMainClassId(String id) {
+            mainClass = id;
+        }
         public void addClass(ClassBuilder builder) {
             String identifier = validateId(builder.getIdentifier());
             classes.put(identifier, builder);
@@ -59,15 +61,43 @@ public class Transpiler {
         public void addSource(String fileName, ParseTree source) {
             if (lookupSource(fileName) != null)
                 throw new IllegalArgumentException("source with fileName '" + fileName + "' already exist");
+            sources.put(fileName, source);
         }
 
-        public void forEachOutput(BiConsumer<? super String, ? super Code> action) {
-            new HashMap<>(classes).forEach(action);
-            new HashMap<>(interfaces).forEach(action);
+        public List<ClassBuilder> getClasses() {
+            return new ArrayList<>(classes.values());
+        }
+        public List<InterfaceBuilder> getInterfaces() {
+            return new ArrayList<>(interfaces.values());
+        }
+        public Map<String, ParseTree> getSources() {
+            return new LinkedHashMap<>(sources);
         }
 
-        public List<ParseTree> getSources() {
-            return new ArrayList<>(sources.values());
+        TranspilerOutput createOutput(Indentation indentation) {
+            final List<String> fileNames = new ArrayList<>();
+            final Map<String, String> output = new HashMap<>();
+            final String mainFile = mainClass == null ? null : mainClass + ".java";
+
+            classes.forEach((id, c) -> {
+                fileNames.add(id + ".java");
+                output.put(id + ".java", c.toCode(indentation));
+            });
+            interfaces.forEach((id, c) -> {
+                fileNames.add(id + ".java");
+                output.put(id + ".java", c.toCode(indentation));
+            });
+            return new TranspilerOutput() {
+                public List<String> allFileNames() {
+                    return new ArrayList<>(fileNames);
+                }
+                public String getTranspiledCode(String fileName) {
+                    return output.get(fileName);
+                }
+                public String lookupMainFileName() {
+                    return mainFile;
+                }
+            };
         }
 
         private String validateId(Code id) {
@@ -75,7 +105,7 @@ public class Transpiler {
                 throw new IllegalArgumentException("Cannot add class or interface: it doesn't have an identifier");
             }
             String identifier = id.toCode();
-            if (doesIdExist(identifier)) {
+            if (doesJavaIdExist(identifier)) {
                 throw new IllegalArgumentException("Cannot add class or interface: identifier '"
                                                    + identifier + "' already exist");
             }

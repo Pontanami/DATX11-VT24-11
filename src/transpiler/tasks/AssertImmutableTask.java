@@ -17,7 +17,7 @@ public class AssertImmutableTask implements TranspilerTask {
     @Override
     public void run(TranspilerState state) {
         TheParserVisitor<Void> asserter = new AssertImmutableVisitor();
-        for (ParseTree tree : state.getSources()) {
+        for (ParseTree tree : state.getSources().values()) {
             tree.accept(asserter);
         }
     }

@@ -5,6 +5,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 
+// The EventHandler class is used by transpiled publisher classes. It manages a collection of subscribers and handles
+// publishing events. The order in which subscribers are notified is undefined.
 public final class EventHandler<E> {
     private final Map<Subscriber, Consumer<E>> subscribers;
 

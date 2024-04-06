@@ -45,7 +45,7 @@ public class CodeBuilder implements Code {
     public CodeBuilder append(String... fragments) {
         return runBuilderAction(() -> {
             for (String s : throwOnNull(fragments))
-                appendCode(Code.fromString(s));
+                appendCode(fromString(s));
         });
     }
     // append each fragment on a new line with the given change in indentation (must be >= 0)
