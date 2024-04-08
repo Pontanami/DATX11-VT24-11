@@ -1,4 +1,0 @@
-type MyInterface {
-	void method1();
-	int method2();
-}

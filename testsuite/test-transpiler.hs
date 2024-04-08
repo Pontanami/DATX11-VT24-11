@@ -13,7 +13,8 @@ import Control.Monad
 
 import Data.Char
 import Data.IORef
-import Data.List (isInfixOf, partition, sort)
+import Data.Functor ((<&>))
+import Data.List (isInfixOf, isPrefixOf, isSuffixOf, partition, sort, find)
 import Data.Maybe
 
 import System.Console.GetOpt
@@ -75,15 +76,29 @@ debug s = do
   when d $ putStrLn s
 
 listTestFiles :: FilePath -> IO [FilePath]
-listTestFiles dir = sort . filter ((==".txt") . takeExtension) <$> listDirectoryRecursive dir
+listTestFiles dir = sort <$> (filterM isTest =<< listTestsRecursive dir)
+   where
+      isTest f = doesDirectoryExist f <&> \isDir ->
+         isDir && isTestModule f ||  takeExtension f == ".flux"
 
-listDirectoryRecursive :: FilePath -> IO [FilePath]
-listDirectoryRecursive dir = do
-  doesDirectoryExist dir >>= \case
-    False -> return []
-    True  -> do
-      fs <- map (dir </>) <$> listDirectory dir
-      (fs ++) <$> concatMapM listDirectoryRecursive fs
+listTestsRecursive :: FilePath -> IO [FilePath]
+listTestsRecursive dir = do
+   doesDirectoryExist dir >>= \case
+      False            -> return []
+      True | stopSeach -> return []
+      _                -> do
+         fs <- map (dir </>) <$> listDirectory dir
+         (fs ++) <$> concatMapM listTestsRecursive fs
+   where
+      stopSeach = isTestModuleOrTranspilerOutput dir
+
+isTestModuleOrTranspilerOutput :: FilePath -> Bool
+isTestModuleOrTranspilerOutput dir = "test_" `isPrefixOf` dirName || "_transpiled" `isSuffixOf` dirName
+   where dirName = takeFileName dir
+
+isTestModule :: FilePath -> Bool
+isTestModule dir = "test_" `isPrefixOf` dirName && not ("_transpiled" `isSuffixOf` dirName)
+   where dirName = takeFileName dir
 
 welcome :: IO ()
 welcome = putStrLn $ "This is the test program for the transpiler"
@@ -157,32 +172,31 @@ runTests dir (goodProgs, badProgs, badRuntimeProgs) = do
 
 testGoodProgram :: FilePath -> FilePath -> IO Bool
 testGoodProgram prog f = do
-  input  <- readFileIfExists $ f ++ ".input"
-  output <- readFileIfExists $ f ++ ".output"
-  putStr $ "Running " ++ f ++ "... "
-  (s,out,err) <- readProcessWithExitCode prog [f] input
-  putStrLnExitCode s "."
-  debug $ "Exit code: " ++ show s
-  -- Try to work around line ending problem
-  let removeCR = filter (/= '\r')
-  if (trim (removeCR err) /= "")
-  then reportError prog "unexpected output on stderr" (Just f) (Just input) (Just out) (nullMaybe err) >>
-       return False
-  else do docmp <- readIORef doCmp
-          if docmp
-          then if trim (removeCR out) == trim (removeCR output)
-               then return True
-               else do reportError prog "invalid output" (Just f) (Just input) (Just out) (nullMaybe err)
-                       putStrLn "Expected output:"
-                       putStrLn $ color blue $ output
-                       return False
-          else return True
+   (output, args) <- getTestData f
+   putStr $ "Running " ++ f ++ "... "
+   (s,out,err) <- readProcessWithExitCode prog args ""
+   putStrLnExitCode s "."
+   debug $ "Exit code: " ++ show s
+   -- Try to work around line ending problem
+   let removeCR = filter (/= '\r')
+   if (trim (removeCR err) /= "")
+   then reportError prog "unexpected output on stderr" (Just f) (Just "") (Just out) (nullMaybe err) >>
+        return False
+   else do docmp <- readIORef doCmp
+           if docmp
+           then if trim (removeCR out) == trim (removeCR output)
+                then return True
+                else do reportError prog "invalid output" (Just f) (Just "") (Just out) (nullMaybe err)
+                        putStrLn "Expected output:"
+                        putStrLn $ color blue $ output
+                        return False
+           else return True
 
 testBadProgram :: FilePath -> FilePath -> IO Bool
 testBadProgram prog f = do
-  input <- readFileIfExists $ f ++ ".input"
+  (_, args) <- getTestData f
   putStr $ "Running " ++ f ++ "... "
-  (s,out,err) <- readProcessWithExitCode prog [f] input
+  (s,out,err) <- readProcessWithExitCode prog args ""
   putStrLnExitCode s "."
   debug $ "Exit code: " ++ show s
   -- A. Abel, 2020-11-18 more lenient checking for error report.
@@ -198,9 +212,9 @@ testBadProgram prog f = do
 
 testBadRuntimeProgram :: FilePath -> FilePath -> IO Bool
 testBadRuntimeProgram prog f = do
-  input <- readFileIfExists $ f++ ".input"
+  (_, args) <- getTestData f
   putStr $ "Running " ++ f ++ "... "
-  (s,out,err) <- readProcessWithExitCode prog [f] input
+  (s,out,err) <- readProcessWithExitCode prog args ""
   putStrLnExitCode s "."
   debug $ "Exit code: " ++ show s
   docmp <- readIORef doCmp
@@ -216,6 +230,26 @@ testBadRuntimeProgram prog f = do
           ExitFailure{} -> "Expected output 'Exception', but this was not printed"
     reportError prog msg (Just f) Nothing (nullMaybe out) (nullMaybe err)
     return False
+
+
+getTestData :: FilePath -> IO (String, [String])
+getTestData f = do
+   isDir <- doesDirectoryExist f
+   if isDir then do
+      output <- getFilesWith ".output" f >>= readFirstIfExists
+      args   <- getFilesWith ".flux" f
+      let destination = f ++ "_transpiled"
+      createDirectoryIfMissing False destination
+      return (output, "-r" : "-o" : destination : args)
+   else do
+      output <- readFileIfExists $ f ++ ".output"
+      let destination = takeWhile (/= '.') f ++ "_transpiled"
+      createDirectoryIfMissing False destination
+      return (output, ["-r", "-o", destination, f])
+   where
+      readFirstIfExists (f:_) = readFileIfExists f
+      readFirstIfExists _     = return ""
+      getFilesWith ext dir    = map (dir </>) . filter ((== ext) . takeExtension) <$> listDirectory dir
 
 
 --

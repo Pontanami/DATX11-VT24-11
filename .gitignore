@@ -40,3 +40,9 @@ gen/
 
 # auto-generated batch file for running transpiler
 src/Transpiler.bat
+
+# standard transpiler output directory
+transpiler-output/
+
+# transpiler output directory for the testsuite
+*_transpiled/
