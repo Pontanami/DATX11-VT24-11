@@ -1,11 +1,17 @@
-import grammar.gen.TheLexer;
-import grammar.gen.TheParser;
+import grammar.gen.ConfluxLexer;
+import grammar.gen.ConfluxParser;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.TokenStream;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.antlr.v4.runtime.BailErrorStrategy;
+import org.antlr.v4.runtime.tree.ParseTree;
+import transpiler.tasks.TaskQueue;
+import transpiler.visitors.DefaultTranspiler;
+import transpiler.visitors.ObserverTranspiler;
+import transpiler.visitors.StatementTranspiler;
+import transpiler.visitors.TypeVisitor;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -20,12 +26,14 @@ public class Main {
         }
         try {
             CharStream stream = CharStreams.fromFileName(args[0]);
-            TheLexer lexer = new TheLexer(stream);
+            ConfluxLexer lexer = new ConfluxLexer(stream);
             TokenStream tokenStream = new CommonTokenStream(lexer);
-            TheParser parser = new TheParser(tokenStream);
+            ConfluxParser parser = new ConfluxParser(tokenStream);
             // Ensures that the parser throws a ParseCancellationException if it can't parse
             parser.setErrorHandler(new BailErrorStrategy());
-            TheParser.ProgramContext prog = parser.program();
+            ParseTree prog = parser.statement();
+            StatementTranspiler stmTranspiler = new StatementTranspiler(new ObserverTranspiler(new TaskQueue()));
+            System.out.println(prog.accept(stmTranspiler));
         } catch (IOException e) {
             e.printStackTrace();
             System.exit(1);

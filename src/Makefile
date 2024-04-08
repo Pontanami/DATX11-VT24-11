@@ -3,8 +3,8 @@
 ###########################################################
 
 # The names of the lexer and parser
-parser := TheParser
-lexer := TheLexer
+parser := ConfluxParser
+lexer := ConfluxLexer
 
 # Antlr options
 antlr_out := ../src/grammar/gen

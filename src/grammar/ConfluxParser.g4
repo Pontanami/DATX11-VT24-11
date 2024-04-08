@@ -1,8 +1,8 @@
 
-parser grammar TheParser;
+parser grammar ConfluxParser;
 
 options{
-    tokenVocab=TheLexer;
+    tokenVocab=ConfluxLexer;
 }
 
 program : typeDeclaration EOF ;
@@ -41,11 +41,7 @@ typePublishes : PUBLISHES Identifier (COMMA Identifier)* ;
 
 declaration: variableDeclaration | type assignment | arrayDeclaration;
 
-methodSignature : ownMethodSignature SEMI| containsMethodSignature SEMI;
-
-ownMethodSignature : methodType methodName LPAREN variableList? RPAREN ;
-
-containsMethodSignature : methodType methodName LPAREN variableList? RPAREN FROM Identifier DOT methodName LPAREN variableList? RPAREN ;
+methodSignature : methodType methodName LPAREN variableList? RPAREN SEMI;
 
 variableDeclaration : declaredVariableList;
 
@@ -62,19 +58,25 @@ methodDeclaration : methodType Identifier LPAREN variableList? RPAREN methodBody
 arrayDeclaration : arrayType variableId;
 
 //Statements -------------------------------------------------------------------------------------------------------
-statement : expression SEMI
-          | assignment SEMI
-          | declaration SEMI
-          | forStatement
-          | ifStatement
-          | whileStatement
-          | switchStatement
-          | returnStatement
-          | block
-          | publishStatement
-          | addSubscriberStatement
-          | removeSubscriberStatement
+statement : javaStatement
+          | observerStatement
           ;
+
+javaStatement : expression SEMI
+              | assignment SEMI
+              | declaration SEMI
+              | forStatement
+              | ifStatement
+              | whileStatement
+              | switchStatement
+              | returnStatement
+              | block
+              ;
+
+observerStatement : publishStatement
+                  | addSubscriberStatement
+                  | removeSubscriberStatement
+                  ;
 
 assignment : qualifiedIdentifier ASSIGN (expression | arrayAssignement) ;
 

@@ -11,6 +11,10 @@ public class Environment {
         return "_" + source;
     }
 
+    public static String classId(String source) {
+        return "_Class" + source;
+    }
+
     // If the source is a java keyword that isn't a keyword in the project language,
     // then the returned string should be converted into a valid java identifier
     public static String escapeJavaKeyword(String source) {

@@ -1,8 +1,8 @@
 package transpiler.visitors;
 
-import grammar.gen.TheParser.*;
-import grammar.gen.TheParserBaseVisitor;
-import grammar.gen.TheParserVisitor;
+import grammar.gen.ConfluxParserBaseVisitor;
+import grammar.gen.ConfluxParser.*;
+import grammar.gen.ConfluxParserVisitor;
 import java_builder.*;
 import transpiler.Environment;
 import transpiler.tasks.TaskQueue;
@@ -18,16 +18,15 @@ import static transpiler.tasks.TaskQueue.Priority;
 // visitPublishStatement
 // visitAddSubscriberStatement
 // visitRemoveSubscriberStatement
-public class ObserverTranspiler extends TheParserBaseVisitor<String> {
+public class ObserverTranspiler extends ConfluxParserBaseVisitor<String> {
     private final String publish = Environment.reservedId("publish");
     private final String addSubscriber = Environment.reservedId("addSubscriber");
     private final String removeSubscriber = Environment.reservedId("removeSubscriber");
 
-    private final TheParserVisitor<String> expressionTranspiler;
+    private final ConfluxParserVisitor<String> expressionTranspiler = new DefaultTranspiler();
     private final TaskQueue taskQueue;
 
-    public ObserverTranspiler(TheParserVisitor<String> expressionTranspiler, TaskQueue taskQueue) {
-        this.expressionTranspiler = expressionTranspiler;
+    public ObserverTranspiler(TaskQueue taskQueue) {
         this.taskQueue = taskQueue;
     }
 

@@ -1,5 +1,5 @@
 
-lexer grammar TheLexer;
+lexer grammar ConfluxLexer;
 
 //Types
 INT : 'int' ;

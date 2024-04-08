@@ -1,8 +1,8 @@
 package transpiler.visitors;
 
-import grammar.gen.TheLexer;
-import grammar.gen.TheParser;
-import grammar.gen.TheParserBaseVisitor;
+import grammar.gen.ConfluxLexer;
+import grammar.gen.ConfluxParser;
+import grammar.gen.ConfluxParserBaseVisitor;
 import java_builder.CodeBuilder;
 import org.antlr.v4.runtime.tree.RuleNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
@@ -10,7 +10,7 @@ import transpiler.Environment;
 
 // Approximately recreates the source code, ignoring formatting,
 // useful when java syntax and [language name] syntax are the same
-public class DefaultTranspiler extends TheParserBaseVisitor<String> {
+public class DefaultTranspiler extends ConfluxParserBaseVisitor<String> {
 
     @Override
     public String visitChildren(RuleNode node) {
@@ -18,13 +18,13 @@ public class DefaultTranspiler extends TheParserBaseVisitor<String> {
     }
 
     @Override
-    public String visitQualifiedIdentifier(TheParser.QualifiedIdentifierContext ctx) {
+    public String visitQualifiedIdentifier(ConfluxParser.QualifiedIdentifierContext ctx) {
         return concatChildren(ctx, ""); // don't put spaces around tokens in qualified ids like 'obj.x.y'
     }
 
     @Override
     public String visitTerminal(TerminalNode node) {
-        if (node.getSymbol().getType() == TheLexer.Identifier)
+        if (node.getSymbol().getType() == ConfluxLexer.Identifier)
             return Environment.escapeJavaKeyword(node.toString());
         else
             return node.toString();
