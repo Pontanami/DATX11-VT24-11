@@ -49,7 +49,7 @@ public class Main {
             System.exit(1);
         } catch (TranspilerException e) {
             System.err.println("TRANSPILER ERROR");
-            e.printStackTrace(System.err);
+            System.err.println(e.getMessage());
             System.exit(1);
         }
     }
@@ -64,11 +64,11 @@ public class Main {
         return parser.program();
     }
 
-    private static void createDirectoryIfMissing(String outDir) throws IOException {
+    private static void createOutputDirectory(String outDir) throws IOException {
         try {
             Files.createDirectories(Path.of(outDir));
         } catch (IOException e) {
-            System.err.println("Couldn't create output directory");
+            System.err.println("Couldn't create output directory: " + outDir);
             throw new IOException(e);
         }
     }
@@ -78,7 +78,7 @@ public class Main {
     }
     // Go through the transpiler output and write all the java files into the given directory
     private static void writeJavaFiles(String outDir, TranspilerOutput output) throws IOException {
-        createDirectoryIfMissing(outDir);
+        createOutputDirectory(outDir);
         for (String fileName : output.allFileNames()) {
             File javaFile = new File(Path.of(outDir, fileName).toString());
             javaFile.createNewFile();
