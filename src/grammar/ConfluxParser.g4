@@ -60,6 +60,7 @@ arrayDeclaration : arrayType variableId;
 //Statements -------------------------------------------------------------------------------------------------------
 statement : javaStatement
           | observerStatement
+          | getterStatement
           ;
 
 javaStatement : expression SEMI
@@ -109,6 +110,9 @@ publishStatement : PUBLISH expression (LPAREN Identifier RPAREN)? SEMI ;
 addSubscriberStatement : expression ADD SUBSCRIBER Identifier DOT Identifier (LPAREN Identifier RPAREN)? SEMI;
 
 removeSubscriberStatement : expression REMOVE SUBSCRIBER Identifier DOT Identifier (LPAREN Identifier RPAREN)? SEMI;
+
+getterStatement : declaration AS expression SEMI;
+
 
 //Expressions -------------------------------------------------------------------------------------------------------
 expression: literals

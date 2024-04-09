@@ -27,6 +27,8 @@ SUBSCRIBER : 'subscriber' ;
 ADD : 'add' ;
 REMOVE : 'remove' ;
 
+AS : 'as' ;
+
 //Modifiers
 PUBLIC : 'public' ;
 PRIVATE : 'private' ;
