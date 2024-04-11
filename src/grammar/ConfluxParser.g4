@@ -51,7 +51,7 @@ compositeDeclaration :  variableId ASSIGN Identifier DOT Identifier LPAREN param
 
 aggregateDeclaration : variableId ASSIGN Identifier LPAREN parameterList? RPAREN SEMI ;
 
-constructorDeclaration : constructorModifier? Identifier LPAREN variableList? RPAREN SEMI;
+constructorDeclaration : Identifier LPAREN variableList? RPAREN LBRACE statement* RBRACE;
 
 methodDeclaration : methodType Identifier LPAREN variableList? RPAREN methodBody  ;
 
@@ -148,7 +148,7 @@ containsBlock : CONTAINS LBRACE containsDeclaration*  RBRACE ;
 
 attributesBlock : ATTRIBUTES  LBRACE (declaration SEMI)*  RBRACE ;
 
-constructorsBlock : CONSTRUCTORS LBRACE constructorDeclaration* RBRACE ;
+constructorsBlock : SINGLETON? CONSTRUCTORS LBRACE constructorDeclaration* RBRACE ;
 
 methodBlock : METHODS LBRACE methodDeclaration* RBRACE ;
 

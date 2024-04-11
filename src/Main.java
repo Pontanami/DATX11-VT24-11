@@ -1,5 +1,6 @@
 import grammar.gen.ConfluxLexer;
 import grammar.gen.ConfluxParser;
+import java_builder.*;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -7,16 +8,16 @@ import org.antlr.v4.runtime.TokenStream;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.antlr.v4.runtime.BailErrorStrategy;
 import org.antlr.v4.runtime.tree.ParseTree;
+import transpiler.Transpiler;
+import transpiler.TranspilerState;
 import transpiler.tasks.TaskQueue;
-import transpiler.visitors.DefaultTranspiler;
+import transpiler.visitors.ConstructorTranspiler;
 import transpiler.visitors.ObserverTranspiler;
 import transpiler.visitors.StatementTranspiler;
-import transpiler.visitors.TypeVisitor;
 
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Stream;
 
 public class Main {
     public static void main(String[] args) {
@@ -31,9 +32,16 @@ public class Main {
             ConfluxParser parser = new ConfluxParser(tokenStream);
             // Ensures that the parser throws a ParseCancellationException if it can't parse
             parser.setErrorHandler(new BailErrorStrategy());
-            ParseTree prog = parser.statement();
-            StatementTranspiler stmTranspiler = new StatementTranspiler(new ObserverTranspiler(new TaskQueue()));
-            System.out.println(prog.accept(stmTranspiler));
+            ParseTree prog = parser.program();
+
+            TranspilerState state = null; // initialState();
+            TaskQueue taskQueue = new TaskQueue();
+            prog.accept(new ConstructorTranspiler(taskQueue));
+            taskQueue.runTasks(state);
+
+            System.out.println(state.lookupInterface("Car").toCode(new SpaceIndentation(3)));
+            System.out.println();
+            System.out.println(state.lookupClass("_ClassCar").toCode(new SpaceIndentation(3)));
         } catch (IOException e) {
             e.printStackTrace();
             System.exit(1);
@@ -43,4 +51,11 @@ public class Main {
             System.exit(1);
         }
     }
+
+    /*static TranspilerState initialState() {
+        TranspilerState state = new Transpiler.State();
+        state.addInterface(new InterfaceBuilder().setIdentifier("Car").addModifier("public"));
+        state.addClass(new ClassBuilder().setIdentifier("_ClassCar").addImplementedInterface("Car"));
+        return state;
+    }*/
 }
