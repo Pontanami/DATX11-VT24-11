@@ -4,6 +4,8 @@ import grammar.gen.ConfluxParser;
 import grammar.gen.ConfluxParserBaseVisitor;
 import org.antlr.v4.runtime.tree.ParseTree;
 
+import java.util.List;
+
 public class MethodTranspiler extends ConfluxParserBaseVisitor<String> {
 
     @Override
@@ -71,7 +73,16 @@ public class MethodTranspiler extends ConfluxParserBaseVisitor<String> {
 
     @Override
     public String visitMethodBlock(ConfluxParser.MethodBlockContext ctx) {
-        return super.visitMethodBlock(ctx);
+        StringBuilder result = new StringBuilder();
+
+        List<ParseTree> allMethods = ctx.children;
+        if(allMethods.get(2) != null){
+            //index 2 är efter "{" och size-1 är innan "}"
+            for (int i = 2; i < allMethods.size()-1; i++) {
+                result.append(allMethods.get(i).getText()).append(" ");
+            }
+        }
+        return result.toString();
     }
 
     @Override

@@ -35,7 +35,7 @@ public class Main {
 
             System.out.println("Testar METHOD-TRANSPILERN::::\n");
 
-            ParseTree prog = parser.methodBody();
+            ParseTree prog = parser.methodBlock();
             MethodTranspiler methodTranspiler = new MethodTranspiler();
 
             System.out.println(prog.accept(methodTranspiler));
