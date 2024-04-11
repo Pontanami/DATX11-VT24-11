@@ -35,8 +35,7 @@ public class Main {
 
             System.out.println("Testar METHOD-TRANSPILERN::::\n");
 
-           // ParseTree prog = parser.methodType(); // testa methodType parserregeln
-            ParseTree prog = parser.methodSignature();
+            ParseTree prog = parser.methodBody();
             MethodTranspiler methodTranspiler = new MethodTranspiler();
 
             System.out.println(prog.accept(methodTranspiler));

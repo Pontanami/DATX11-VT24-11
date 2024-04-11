@@ -1,1 +1,6 @@
-int test(int i, bool b1, bool b2, String s, Car delorean);
+{
+    int j;
+    int i = 1;
+    j = i;
+    return j;
+}
