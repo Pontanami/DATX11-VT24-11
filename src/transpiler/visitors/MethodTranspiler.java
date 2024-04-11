@@ -23,13 +23,22 @@ public class MethodTranspiler extends ConfluxParserBaseVisitor<String> {
         String type = ctx.methodType().getText();
         String name = ctx.methodName().getText();
         //Om variableList finns så blir dessa argument, annars är argument en tom sträng
-        String arguments = ctx.variableList() != null? ctx.variableList().getText(): "";
-
-        System.out.println("Variables:" + arguments);
-
-        String result = type + " " + name + "(" + arguments + ");";
-
-        return result;
+        StringBuilder sb = new StringBuilder();
+        if(ctx.variableList()!= null){
+            int i = 0;
+            while (ctx.variableList().variable(i) != null) {
+                if(i!=0) sb.append(" ");
+                String argType = ctx.variableList().variable(i).type().getText();
+                String argName = ctx.variableList().variable(i).variableId().getText();
+                sb.append(argType).append(" ").append(argName).append(",");
+                i++;
+            }
+            //Ta bort sista kommatecknet
+            sb.deleteCharAt(sb.length()-1);
+        }
+        // Assigna arguments som variabellistan eller tom sträng beroende på situation
+        String arguments = ctx.variableList() != null? sb.toString(): "";
+        return type + " " + name + "(" + arguments + ");";
     }
 
     @Override
