@@ -1,5 +1,17 @@
 package transpiler.visitors;
 
+/*
+* I main i slutet av try-blocket:
+*             System.out.println("Testar METHOD-TRANSPILERN::::\n");
+
+            ParseTree prog = parser.methodBlock(); // byt methodBlock() till den funktion som ska testas.
+            MethodTranspiler methodTranspiler = new MethodTranspiler();
+
+            System.out.println(prog.accept(methodTranspiler));
+*
+* Kör method-test.txt som main argument för att testa. method-different-tests.txt är bara en samling av alla olika tester.
+* */
+
 import grammar.gen.ConfluxParser;
 import grammar.gen.ConfluxParserBaseVisitor;
 import org.antlr.v4.runtime.tree.ParseTree;
