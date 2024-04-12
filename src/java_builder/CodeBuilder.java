@@ -14,6 +14,11 @@ public class CodeBuilder implements Code {
         public String toCode(Indentation indentation) { return "\n"; }
         public String toString() { return "[NEW_LINE]"; }
     };
+    private static final Code EMPTY = new Code() {
+        public String toCode() { return ""; }
+        public String toCode(Indentation indentation) { return indentation.string(); }
+        public String toString() { return "[EMPTY]"; }
+    };
 
     private List<Code> fragments;
     private Deque<Boolean> conditionalBlocks;
@@ -89,6 +94,11 @@ public class CodeBuilder implements Code {
         });
     }
 
+    public CodeBuilder newLine() { return newLine(0); }
+    public CodeBuilder newLine(int indentDelta) {
+        return runBuilderAction(() -> appendCode(EMPTY, indentDelta));
+    }
+
     private void appendCode(boolean ignoreEmpty, CodeBuilder builder) {
         appendCode(ignoreEmpty, null, builder);
     }
@@ -102,8 +112,8 @@ public class CodeBuilder implements Code {
     }
     private void appendCode(Code fragment, Integer indentDelta) {
         throwOnNull(fragment);
-        boolean onNewLine = indentDelta != null;
-        if (onNewLine && indentDelta < 0)
+        boolean appendOnNewLine = indentDelta != null;
+        if (appendOnNewLine && indentDelta < 0)
             throw new IllegalArgumentException("indentDelta < 0");
         if (delimiter != null) {
             if (firstDelimitedItem)
@@ -111,11 +121,14 @@ public class CodeBuilder implements Code {
             else
                 this.fragments.add(delimiter.withoutIndentation());
         }
-        if (onNewLine && !isEmpty())
+        if (appendOnNewLine && !isEmpty())
             fragments.add(NEW_LINE);
         if (prefix != null)
             fragments.add(prefix);
-        fragments.add(onNewLine ? fragment.withIndentationDelta(indentDelta) : fragment.withoutIndentation());
+        fragments.add(appendOnNewLine || isEmpty()
+                ? fragment.withIndentationDelta(indentDelta != null ? indentDelta : 0)
+                : fragment.withoutIndentation()
+        );
         if (suffix != null)
             fragments.add(suffix);
     }
@@ -194,12 +207,17 @@ public class CodeBuilder implements Code {
 
     @Override
     public String toCode(Indentation indentation) {
-        return indentation.string() + fragments.stream().map(c -> c.toCode(indentation)).collect(Collectors.joining());
+        return fragments.stream().map(c -> c.toCode(indentation)).collect(Collectors.joining());
     }
 
     private <T> T throwOnNull(T obj) {
         if (obj == null)
             throw new IllegalArgumentException("CodeBuilder: null argument");
         return obj;
+    }
+
+    @Override
+    public String toString() {
+        return "CodeBuilder{fragments=" + fragments + '}';
     }
 }
