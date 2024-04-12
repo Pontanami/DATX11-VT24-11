@@ -158,7 +158,7 @@ methodBody : LBRACE statement* RBRACE ;
 
 //Var ska de här vara
 
-declaredVariableList : variable (COMMA variable (ASSIGN initVariable)?)* ;
+declaredVariableList : variable (COMMA variable)*  (ASSIGN initVariable)? ;
 
 variableList : variable (COMMA variable)*   ;
 
