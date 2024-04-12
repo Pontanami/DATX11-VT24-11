@@ -5,7 +5,7 @@ options{
     tokenVocab=ConfluxLexer;
 }
 
-program : typeDeclaration EOF ;
+program : (typeDeclaration | decoratorDeclaration) EOF ;
 
 //Type rules
 literals
@@ -19,18 +19,17 @@ numericType
 primitiveType
     : numericType
     | BOOLEAN
-    | STRING
     ;
 
-type: Identifier | primitiveType | arrayType;
+type: Identifier | STRING | primitiveType | arrayType;
 
-arrayType : (Identifier|primitiveType) LBRACK RBRACK ;
+arrayType : (Identifier | STRING | primitiveType) (LBRACK RBRACK)+ ;
 
+typeId : Identifier ;
+decoratorId : Identifier ;
 methodType : type | VOID ;
-methodName : Identifier ;
+methodId : Identifier ;
 variableId : Identifier ;
-
-constructorModifier : PUBLIC | PRIVATE | SINGLETON ;
 
 //Declarations --------------------------------------------------------------------------------------------------------
 typeDeclaration : TYPE Identifier typeExtend? typePublishes? typeBody  ;
@@ -39,23 +38,58 @@ typeExtend : EXTENDS Identifier ( COMMA Identifier)*;
 
 typePublishes : PUBLISHES Identifier (COMMA Identifier)* ;
 
-declaration: variableDeclaration | type assignment | arrayDeclaration;
+decoratorDeclaration: DECORATOR decoratorId DECORATES typeId LBRACE decoratorMethodDeclaration* RBRACE ;
 
-methodSignature : methodType methodName LPAREN variableList? RPAREN SEMI;
+decoratorMethodDeclaration: Identifier methodBody ;
 
-variableDeclaration : declaredVariableList;
+declaration: VAR? type (Identifier (ASSIGN expression)?)+ ;
 
-containsDeclaration : compositeDeclaration | aggregateDeclaration ;
+methodSignature : methodType methodId LPAREN variableList? RPAREN;
 
-compositeDeclaration :  variableId ASSIGN Identifier DOT Identifier LPAREN parameterList? RPAREN SEMI ;
+attributeDeclaration : declaration (AS Identifier)? ;
 
-aggregateDeclaration : variableId ASSIGN Identifier LPAREN parameterList? RPAREN SEMI ;
+
+componentsDeclaration : compositeDeclaration | aggregateDeclaration ;
+
+compositeDeclaration :   declaration handlesClause ;
+
+aggregateDeclaration : declarationNoAssign handlesClause ;
+
+declarationNoAssign : type (Identifier (COMMA Identifier)*) ;
+
+handlesClause : (HANDLES (delegateMethod (COMMA delegateMethod)*))? ;
+
+delegateMethod : methodId LPAREN variableList? RPAREN renameMethod? ;
+
+renameMethod : (AS Identifier) ;
 
 constructorDeclaration : Identifier LPAREN variableList? RPAREN LBRACE statement* RBRACE;
 
-methodDeclaration : methodType methodName LPAREN variableList? RPAREN methodBody  ;
+methodDeclaration : methodType methodId LPAREN variableList? RPAREN methodBody  ;
 
-arrayDeclaration : arrayType variableId;
+
+variableList : variable (COMMA variable)* ;
+
+variable :type variableId;
+
+parameterList : expression (COMMA expression)* ;
+
+//Top-level blocks ----------------------------------------------------------------------------------------------------
+typeBody : interfaceBlock constructorsBlock? componentsBlock? attributesBlock? methodBlock? ;
+
+interfaceBlock : LBRACE (methodSignature SEMI)*  RBRACE ;
+
+componentsBlock : COMPONENTS LBRACE (componentsDeclaration SEMI)*  RBRACE ;
+
+attributesBlock : ATTRIBUTES  LBRACE (attributeDeclaration SEMI)*  RBRACE ;
+
+constructorsBlock : SINGLETON? CONSTRUCTORS LBRACE constructorDeclaration* RBRACE ;
+
+methodBlock : METHODS LBRACE methodDeclaration* RBRACE ;
+
+block : LBRACE statement* RBRACE ;
+
+methodBody : LBRACE statement* RBRACE ;
 
 //Statements -------------------------------------------------------------------------------------------------------
 statement : javaStatement
@@ -111,11 +145,12 @@ addSubscriberStatement : expression ADD SUBSCRIBER Identifier DOT Identifier (LP
 removeSubscriberStatement : expression REMOVE SUBSCRIBER Identifier DOT Identifier (LPAREN Identifier RPAREN)? SEMI;
 
 //Expressions -------------------------------------------------------------------------------------------------------
-expression: literals
+expression: LPAREN expression RPAREN
+          | literals
           | qualifiedIdentifier
           | methodCall
-          | qualifiedIdentifier LPAREN expression RPAREN
-          | qualifiedIdentifier LBRACK expression RBRACK
+          | arrayConstructor
+          | qualifiedIdentifier LBRACK expression RBRACK // array access
           | qualifiedIdentifier (INC | DEC)
           | (INC | DEC) qualifiedIdentifier
           | BANG expression
@@ -135,37 +170,8 @@ expression: literals
           | expression OR expression
           ;
 
-qualifiedIdentifier :  Identifier (DOT Identifier)*;
+arrayConstructor : arrayType DOT Identifier LPAREN parameterList? RPAREN ;
+
+qualifiedIdentifier : Identifier (DOT Identifier)*;
 
 methodCall : qualifiedIdentifier LPAREN parameterList? RPAREN;
-
-//Top-level blocks ----------------------------------------------------------------------------------------------------
-typeBody : interfaceBlock  containsBlock? constructorsBlock? attributesBlock? methodBlock? ;
-
-interfaceBlock : LBRACE methodSignature*  RBRACE ;
-
-containsBlock : CONTAINS LBRACE containsDeclaration*  RBRACE ;
-
-attributesBlock : ATTRIBUTES  LBRACE (declaration SEMI)*  RBRACE ;
-
-constructorsBlock : SINGLETON? CONSTRUCTORS LBRACE constructorDeclaration* RBRACE ;
-
-methodBlock : METHODS LBRACE methodDeclaration* RBRACE ;
-
-block : LBRACE statement* RBRACE ;
-
-methodBody : LBRACE statement* RBRACE ;
-
-//Var ska de här vara
-
-declaredVariableList : variable (COMMA variable)*  (ASSIGN initVariable)? ;
-
-variableList : variable (COMMA variable)*   ;
-
-variable :type variableId;
-
-initVariable : expression ;
-
-parameterList : parameter (COMMA parameter)* ;
-
-parameter : expression ;

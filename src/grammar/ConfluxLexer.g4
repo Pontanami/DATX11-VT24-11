@@ -6,12 +6,12 @@ INT : 'int' ;
 FLOAT : 'float' ;
 BOOLEAN : 'boolean';
 CHAR : 'char' ;
-STRING : 'string' ;
+STRING : 'String' ;
 
 //Keywords
 TYPE : 'type' ;
 EXTENDS : 'extends' ;
-CONTAINS : 'contains' ;
+COMPONENTS : 'components' ;
 FROM : 'from' ;
 VOID : 'void' ;
 ATTRIBUTES : 'attributes' ;
@@ -20,6 +20,11 @@ METHODS : 'methods' ;
 RETURN : 'return' ;
 DEFAULT : 'default' ;
 SINGLETON : 'singleton' ;
+DECORATOR : 'decorator' ;
+DECORATES : 'decorates' ;
+HANDLES : 'handles' ;
+AS : 'as' ;
+VAR : 'var' ;
 
 PUBLISHES : 'publishes' ;
 PUBLISH : 'publish' ;
