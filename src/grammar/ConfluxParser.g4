@@ -53,7 +53,7 @@ aggregateDeclaration : variableId ASSIGN Identifier LPAREN parameterList? RPAREN
 
 constructorDeclaration : Identifier LPAREN variableList? RPAREN LBRACE statement* RBRACE;
 
-methodDeclaration : methodType Identifier LPAREN variableList? RPAREN methodBody  ;
+methodDeclaration : methodType methodName LPAREN variableList? RPAREN methodBody  ;
 
 arrayDeclaration : arrayType variableId;
 

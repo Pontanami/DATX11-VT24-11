@@ -27,8 +27,15 @@ public final class SpaceIndentation implements Indentation {
     @Override
     public int getLevel() { return tabLevel; }
 
-    @Override
-    public String string() { return new StringBuilder().repeat(" ", tabSize * tabLevel).toString(); }
+    @Override // OBS! Annan version än Omars som inte funkade på min dator...
+    public String string() {
+        StringBuilder stringBuilder = new StringBuilder();
+        for (int i = 0; i < tabSize * tabLevel; i++) {
+            stringBuilder.append(" ");
+        }
+        return stringBuilder.toString();
+    }
+
 
     @Override
     public boolean equals(Object o) {

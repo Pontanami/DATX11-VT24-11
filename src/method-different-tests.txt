@@ -1,0 +1,17 @@
+{
+    int j;
+    int i = 1;
+    j = i;
+    return j;
+}
+
+int test(int i, String s, bool b1, bool b2, Car delorean);
+
+methods{
+    int test1(int a){
+        return a;
+    }
+    void test2(){
+
+    }
+}
