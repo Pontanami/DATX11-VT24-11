@@ -49,7 +49,7 @@ methodSignature : methodType methodId LPAREN variableList? RPAREN;
 attributeDeclaration : declaration (AS Identifier)? ;
 
 
-componentsDeclaration : compositeDeclaration | aggregateDeclaration ;
+componentsDeclaration : aggregateDeclaration | compositeDeclaration ;
 
 compositeDeclaration :   declaration handlesClause ;
 

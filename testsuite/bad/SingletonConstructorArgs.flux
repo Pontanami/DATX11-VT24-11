@@ -1,3 +1,5 @@
+// singleton constructors are not allowed to take arguments
+
 type SingletonConstructorArgs {
 
 }
