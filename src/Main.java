@@ -42,6 +42,7 @@ public class Main {
             MethodTranspiler methodTranspiler = new MethodTranspiler(mb);
 
             prog.accept(methodTranspiler);
+            System.out.println("Metod signatur:");
             System.out.println(methodTranspiler.methodSignatureToString());
 
         } catch (IOException e) {
