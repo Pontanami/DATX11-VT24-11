@@ -1,0 +1,4 @@
+Call forwarded to MyComponent.componentMethod1a()
+Call forwarded to MyComponent.componentMethod1b()
+Call forwarded to MyComponent.componentMethod2a()
+Call forwarded to MyComponent.componentMethod2b()
