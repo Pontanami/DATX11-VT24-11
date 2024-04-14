@@ -14,12 +14,53 @@ package transpiler.visitors;
 
 import grammar.gen.ConfluxParser;
 import grammar.gen.ConfluxParserBaseVisitor;
+import java_builder.MethodBuilder;
 import org.antlr.v4.runtime.tree.ParseTree;
 
 import java.util.List;
 
-public class MethodTranspiler extends ConfluxParserBaseVisitor<String> {
+public class MethodTranspiler extends ConfluxParserBaseVisitor<Void> {
 
+    public MethodBuilder mb;
+
+    public MethodTranspiler(MethodBuilder mb){
+        this.mb = mb;
+    }
+
+    @Override
+    public Void visitMethodSignature(ConfluxParser.MethodSignatureContext ctx) {
+        mb.setReturnType(ctx.methodType().getText());
+        mb.setIdentifier(ctx.methodName().getText());
+        if(ctx.variableList()!= null){
+            int i = 0;
+            while (ctx.variableList().variable(i) != null) {
+                String argType = ctx.variableList().variable(i).type().getText();
+                String argName = ctx.variableList().variable(i).variableId().getText();
+                mb.addParameter(argType, argName);
+                i++;
+            }
+        }
+        return null;
+    }
+
+    // Skriver ut motsvarande javakod i konsolen.
+    public String methodSignatureToString() {
+        StringBuilder arguments = new StringBuilder();
+        for (int i = 0; i < mb.getParameters().size(); i++) {
+            arguments.append(mb.getParameters().get(i).toCode());
+            if(i != mb.getParameters().size()-1) arguments.append(", ");
+        }
+        return mb.getReturnType().toCode() + " " + mb.getIdentifier().toCode() + "(" + arguments +");";
+    }
+
+    @Override
+    public Void visitMethodDeclaration(ConfluxParser.MethodDeclarationContext ctx) {
+        return super.visitMethodDeclaration(ctx);
+    }
+}
+
+/* GAMMALT
+*
     @Override
     public String visitMethodType(ConfluxParser.MethodTypeContext ctx) {
         // Hämta första (enda) barnet/lövet. getText() för värdet som sträng (i detta fall datatypen)
@@ -77,39 +118,4 @@ public class MethodTranspiler extends ConfluxParserBaseVisitor<String> {
         String body = "Body TODO...";
         return signature + body;
     }
-
-    @Override
-    public String visitMethodCall(ConfluxParser.MethodCallContext ctx) {
-        return super.visitMethodCall(ctx);
-    }
-
-    @Override
-    public String visitMethodBlock(ConfluxParser.MethodBlockContext ctx) {
-        StringBuilder result = new StringBuilder();
-
-        List<ParseTree> allMethods = ctx.children;
-        if(allMethods.get(2) != null){
-            //index 2 är efter "{" och size-1 är innan "}"
-            for (int i = 2; i < allMethods.size()-1; i++) {
-                result.append(allMethods.get(i).getText()).append(" ");
-            }
-        }
-        return result.toString();
-    }
-
-    @Override
-    public String visitMethodBody(ConfluxParser.MethodBodyContext ctx) {
-        StringBuilder result = new StringBuilder();
-        result.append("{");
-        if (ctx.statement() != null){
-            for (int i = 0; i < ctx.statement().size(); i++) {
-                // TODO: få ut rätt saker från varje statement.
-                //result.append(ctx.statement().get(i).getText());
-                result.append(ctx.statement(i).getText());
-            }
-        }
-        result.append("}");
-        return result.toString();
-    }
-
-}
+*/

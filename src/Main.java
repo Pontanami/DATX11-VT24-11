@@ -1,5 +1,6 @@
 import grammar.gen.ConfluxLexer;
 import grammar.gen.ConfluxParser;
+import java_builder.MethodBuilder;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -35,10 +36,13 @@ public class Main {
 
             System.out.println("Testar METHOD-TRANSPILERN::::\n");
 
-            ParseTree prog = parser.methodBlock();
-            MethodTranspiler methodTranspiler = new MethodTranspiler();
+            MethodBuilder mb = new MethodBuilder();
 
-            System.out.println(prog.accept(methodTranspiler));
+            ParseTree prog = parser.methodSignature();
+            MethodTranspiler methodTranspiler = new MethodTranspiler(mb);
+
+            prog.accept(methodTranspiler);
+            System.out.println(methodTranspiler.methodSignatureToString());
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -49,4 +53,6 @@ public class Main {
             System.exit(1);
         }
     }
+
+
 }
