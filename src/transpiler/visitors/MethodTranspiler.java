@@ -16,15 +16,18 @@ import grammar.gen.ConfluxParser;
 import grammar.gen.ConfluxParserBaseVisitor;
 import java_builder.MethodBuilder;
 import org.antlr.v4.runtime.tree.ParseTree;
+import transpiler.tasks.TaskQueue;
 
 import java.util.List;
 
 public class MethodTranspiler extends ConfluxParserBaseVisitor<Void> {
 
     public MethodBuilder mb;
+    private StatementTranspiler st;
 
-    public MethodTranspiler(MethodBuilder mb){
+    public MethodTranspiler(MethodBuilder mb, StatementTranspiler st){
         this.mb = mb;
+        this.st = st;
     }
 
     @Override
@@ -68,6 +71,20 @@ public class MethodTranspiler extends ConfluxParserBaseVisitor<Void> {
         }
         System.out.println("VisitMethodDeclaration: " + mb.getReturnType().toCode() + " " + mb.getIdentifier().toCode() + " " +
                 mb.getParameters().toString() + " " + mb.getStatements().toString());
+
+     //   statements hämtas in
+              //  för varje statement -> accepta till node?
+
+        List<ConfluxParser.StatementContext> statements = ctx.methodBody().statement();
+
+
+        for (int i = 0; i < statements.size(); i++) {
+            mb.addStatement(st.visitStatement(statements.get(i))) ;
+        }
+
+        mb.getStatements();
+
+
         return null;    }
 }
 
