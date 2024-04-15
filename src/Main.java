@@ -39,7 +39,7 @@ public class Main {
             MethodTranspiler methodTranspiler = new MethodTranspiler(mb, st);
 
             prog.accept(methodTranspiler);
-          //  System.out.println(methodTranspiler.methodSignatureToString());
+
             System.out.println("Method declaration:");
             System.out.println(methodTranspiler.methodDeclarationToString());
 

@@ -11,7 +11,7 @@ package transpiler.visitors;
             MethodTranspiler methodTranspiler = new MethodTranspiler(mb, st);
 
             prog.accept(methodTranspiler);
-          //  System.out.println(methodTranspiler.methodSignatureToString());
+
             System.out.println("Method declaration:");
             System.out.println(methodTranspiler.methodDeclarationToString());
 
@@ -21,17 +21,11 @@ package transpiler.visitors;
 
             System.out.println("\nMethod body:");
             System.out.println(methodTranspiler.methodBodyToString());
-*
-* Kör method-test.txt som main argument för att testa. method-different-tests.txt är bara en samling av alla olika tester.
 * */
 
 import grammar.gen.ConfluxParser;
 import grammar.gen.ConfluxParserBaseVisitor;
-import java_builder.Code;
-import java_builder.CodeBuilder;
 import java_builder.MethodBuilder;
-import org.antlr.v4.runtime.tree.ParseTree;
-import transpiler.tasks.TaskQueue;
 
 import java.util.List;
 
@@ -50,7 +44,7 @@ public class MethodTranspiler extends ConfluxParserBaseVisitor<Void> {
     public Void visitMethodSignature(ConfluxParser.MethodSignatureContext ctx) {
         mb.setReturnType(ctx.methodType().getText());
         mb.setIdentifier(ctx.methodName().getText());
-        parameterHelper(ctx.variableList(), ctx.variableList(), ctx.variableList(), ctx.variableList());
+        addParameters(ctx.variableList(), ctx.variableList(), ctx.variableList(), ctx.variableList());
         return null;
     }
 
@@ -58,24 +52,12 @@ public class MethodTranspiler extends ConfluxParserBaseVisitor<Void> {
     public Void visitMethodDeclaration(ConfluxParser.MethodDeclarationContext ctx) {
         mb.setReturnType(ctx.methodType().getText());
         mb.setIdentifier(ctx.methodName().getText());
-        parameterHelper(ctx.variableList(), ctx.variableList(), ctx.variableList(), ctx.variableList());
+        addParameters(ctx.variableList(), ctx.variableList(), ctx.variableList(), ctx.variableList());
         List<ConfluxParser.StatementContext> statements = ctx.methodBody().statement();
         for (ConfluxParser.StatementContext statement : statements) {
             mb.addStatement(st.visitStatement(statement));
         }
         return null;
-    }
-
-    private void parameterHelper(ConfluxParser.VariableListContext ctx, ConfluxParser.VariableListContext ctx1, ConfluxParser.VariableListContext ctx2, ConfluxParser.VariableListContext ctx3) {
-        if (ctx != null) {
-            int i = 0;
-            while (ctx1.variable(i) != null) {
-                String argType = ctx2.variable(i).type().getText();
-                String argName = ctx3.variable(i).variableId().getText();
-                mb.addParameter(argType, argName);
-                i++;
-            }
-        }
     }
 
     // För testing____________________________
@@ -104,7 +86,7 @@ public class MethodTranspiler extends ConfluxParserBaseVisitor<Void> {
         return sb.toString();
     }
 
-    // Helper
+    // Helpers
     private String parametersAsString(){
         StringBuilder parameters = new StringBuilder();
         for (int i = 0; i < mb.getParameters().size(); i++) {
@@ -112,5 +94,18 @@ public class MethodTranspiler extends ConfluxParserBaseVisitor<Void> {
             if(i != mb.getParameters().size()-1) parameters.append(", ");
         }
         return parameters.toString();
+    }
+
+    private void addParameters(ConfluxParser.VariableListContext ctx, ConfluxParser.VariableListContext ctx1,
+                               ConfluxParser.VariableListContext ctx2, ConfluxParser.VariableListContext ctx3) {
+        if (ctx != null) {
+            int i = 0;
+            while (ctx1.variable(i) != null) {
+                String argType = ctx2.variable(i).type().getText();
+                String argName = ctx3.variable(i).variableId().getText();
+                mb.addParameter(argType, argName);
+                i++;
+            }
+        }
     }
 }
