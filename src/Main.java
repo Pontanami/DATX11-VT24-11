@@ -37,14 +37,15 @@ public class Main {
             System.out.println("Testar METHOD-TRANSPILERN::::\n");
 
             MethodBuilder mb = new MethodBuilder();
+            StatementTranspiler st = new StatementTranspiler(new ObserverTranspiler(new TaskQueue()));
 
             ParseTree prog = parser.methodDeclaration();
-            MethodTranspiler methodTranspiler = new MethodTranspiler(mb);
+            MethodTranspiler methodTranspiler = new MethodTranspiler(mb, st);
 
             prog.accept(methodTranspiler);
           //  System.out.println(methodTranspiler.methodSignatureToString());
-            System.out.println("Metod declaration:");
-
+            System.out.println("Method body:");
+            System.out.println(methodTranspiler.methodDeclarationToString());
 
         } catch (IOException e) {
             e.printStackTrace();

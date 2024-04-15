@@ -14,6 +14,8 @@ package transpiler.visitors;
 
 import grammar.gen.ConfluxParser;
 import grammar.gen.ConfluxParserBaseVisitor;
+import java_builder.Code;
+import java_builder.CodeBuilder;
 import java_builder.MethodBuilder;
 import org.antlr.v4.runtime.tree.ParseTree;
 import transpiler.tasks.TaskQueue;
@@ -48,12 +50,17 @@ public class MethodTranspiler extends ConfluxParserBaseVisitor<Void> {
 
     // Skriver ut motsvarande javakod i konsolen.
     public String methodSignatureToString() {
-        StringBuilder arguments = new StringBuilder();
-        for (int i = 0; i < mb.getParameters().size(); i++) {
-            arguments.append(mb.getParameters().get(i).toCode());
-            if(i != mb.getParameters().size()-1) arguments.append(", ");
-        }
+        String arguments = parametersAsString();
         return mb.getReturnType().toCode() + " " + mb.getIdentifier().toCode() + "(" + arguments +");";
+    }
+
+    private String parametersAsString(){
+        StringBuilder parameters = new StringBuilder();
+        for (int i = 0; i < mb.getParameters().size(); i++) {
+            parameters.append(mb.getParameters().get(i).toCode());
+            if(i != mb.getParameters().size()-1) parameters.append(", ");
+        }
+        return parameters.toString();
     }
 
     @Override
@@ -69,82 +76,33 @@ public class MethodTranspiler extends ConfluxParserBaseVisitor<Void> {
                 i++;
             }
         }
-        System.out.println("VisitMethodDeclaration: " + mb.getReturnType().toCode() + " " + mb.getIdentifier().toCode() + " " +
-                mb.getParameters().toString() + " " + mb.getStatements().toString());
-
-     //   statements hämtas in
-              //  för varje statement -> accepta till node?
 
         List<ConfluxParser.StatementContext> statements = ctx.methodBody().statement();
 
-
-        for (int i = 0; i < statements.size(); i++) {
-            mb.addStatement(st.visitStatement(statements.get(i))) ;
+        for (ConfluxParser.StatementContext statement : statements) {
+            mb.addStatement(st.visitStatement(statement));
         }
 
-        mb.getStatements();
+        return null;
+    }
 
+    public String methodDeclarationToString(){
+        StringBuilder sb = new StringBuilder();
+        sb.append(mb.getReturnType().toCode()).append(" ").append(mb.getIdentifier().toCode()).append("(").append(parametersAsString()).append(")").append("{\n");
+        for (int i = 0; i < mb.getStatements().size(); i++) {
+            sb.append(mb.getStatements().get(i).toCode());
+            if (i != mb.getStatements().size()-1) sb.append("\n");
+        }
+        sb.append("\n}");
+        return sb.toString();
+    }
 
-        return null;    }
+    public String methodBodyToString(){
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < mb.getStatements().size(); i++) {
+            sb.append(mb.getStatements().get(i).toCode());
+            if (i != mb.getStatements().size()-1) sb.append("\n");
+        }
+        return sb.toString();
+    }
 }
-
-/* GAMMALT
-*
-    @Override
-    public String visitMethodType(ConfluxParser.MethodTypeContext ctx) {
-        // Hämta första (enda) barnet/lövet. getText() för värdet som sträng (i detta fall datatypen)
-        return ctx.getChild(0).getText();
-    }
-
-    @Override
-    public String visitMethodSignature(ConfluxParser.MethodSignatureContext ctx) {
-        System.out.println("i visitMethodSignature");
-        //Hämta typ och namn
-        String type = ctx.methodType().getText();
-        String name = ctx.methodName().getText();
-        //Om variableList finns så blir dessa argument, annars är argument en tom sträng
-        // TODO: refaktorisera...
-        StringBuilder sb = new StringBuilder();
-        if(ctx.variableList()!= null){
-            int i = 0;
-            while (ctx.variableList().variable(i) != null) {
-                if(i!=0) sb.append(" ");
-                String argType = ctx.variableList().variable(i).type().getText();
-                String argName = ctx.variableList().variable(i).variableId().getText();
-                sb.append(argType).append(" ").append(argName).append(",");
-                i++;
-            }
-            //Ta bort sista kommatecknet
-            sb.deleteCharAt(sb.length()-1);
-        }
-        // Assigna arguments som variabellistan eller tom sträng beroende på situation
-        String arguments = ctx.variableList() != null? sb.toString(): "";
-        return type + " " + name + "(" + arguments + ");";
-    }
-
-    @Override
-    public String visitMethodDeclaration(ConfluxParser.MethodDeclarationContext ctx) {
-        System.out.println("Testar visitMethodDeclaration");
-        String type = ctx.methodType().getText();
-        String name = ctx.methodName().getText(); // Ändrade parser-regeln för MethodDeclaration så den tar methodName istället flr Identifier.
-        // TODO: refaktorisera...
-        StringBuilder sb = new StringBuilder();
-        if(ctx.variableList()!= null){
-            int i = 0;
-            while (ctx.variableList().variable(i) != null) {
-                if(i!=0) sb.append(" ");
-                String argType = ctx.variableList().variable(i).type().getText();
-                String argName = ctx.variableList().variable(i).variableId().getText();
-                sb.append(argType).append(" ").append(argName).append(",");
-                i++;
-            }
-            //Ta bort sista kommatecknet
-            sb.deleteCharAt(sb.length()-1);
-        }
-        // Assigna arguments som variabellistan eller tom sträng beroende på situation
-        String arguments = ctx.variableList() != null? sb.toString(): "";
-        String signature = type + " " + name + "(" + arguments + ")";
-        String body = "Body TODO...";
-        return signature + body;
-    }
-*/
