@@ -55,8 +55,20 @@ public class MethodTranspiler extends ConfluxParserBaseVisitor<Void> {
 
     @Override
     public Void visitMethodDeclaration(ConfluxParser.MethodDeclarationContext ctx) {
-        return super.visitMethodDeclaration(ctx);
-    }
+        mb.setReturnType(ctx.methodType().getText());
+        mb.setIdentifier(ctx.methodName().getText());
+        if(ctx.variableList()!= null){
+            int i = 0;
+            while (ctx.variableList().variable(i) != null) {
+                String argType = ctx.variableList().variable(i).type().getText();
+                String argName = ctx.variableList().variable(i).variableId().getText();
+                mb.addParameter(argType, argName);
+                i++;
+            }
+        }
+        System.out.println("VisitMethodDeclaration: " + mb.getReturnType().toCode() + " " + mb.getIdentifier().toCode() + " " +
+                mb.getParameters().toString() + " " + mb.getStatements().toString());
+        return null;    }
 }
 
 /* GAMMALT

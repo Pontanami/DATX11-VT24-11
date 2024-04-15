@@ -38,12 +38,13 @@ public class Main {
 
             MethodBuilder mb = new MethodBuilder();
 
-            ParseTree prog = parser.methodSignature();
+            ParseTree prog = parser.methodDeclaration();
             MethodTranspiler methodTranspiler = new MethodTranspiler(mb);
 
             prog.accept(methodTranspiler);
-            System.out.println("Metod signatur:");
-            System.out.println(methodTranspiler.methodSignatureToString());
+          //  System.out.println(methodTranspiler.methodSignatureToString());
+            System.out.println("Metod declaration:");
+
 
         } catch (IOException e) {
             e.printStackTrace();

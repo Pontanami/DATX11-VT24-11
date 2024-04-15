@@ -1,2 +1,3 @@
-int test(int i, String s, bool b1, bool b2, Car delorean);
-int test2(int i, String s, bool b1, bool b2, Car delorean);
+int test(int i, String s, bool b1, bool b2, Car delorean){
+    return i;
+}
