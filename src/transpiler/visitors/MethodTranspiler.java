@@ -1,13 +1,26 @@
 package transpiler.visitors;
 
 /*
-* I main i slutet av try-blocket:
-*             System.out.println("Testar METHOD-TRANSPILERN::::\n");
+* För att testa. Lägg till detta i main i slutet av try blocket:
+            System.out.println("Testar METHOD-TRANSPILERN::::\n");
 
-            ParseTree prog = parser.methodBlock(); // byt methodBlock() till den funktion som ska testas.
-            MethodTranspiler methodTranspiler = new MethodTranspiler();
+            MethodBuilder mb = new MethodBuilder();
+            StatementTranspiler st = new StatementTranspiler(new ObserverTranspiler(new TaskQueue()));
 
-            System.out.println(prog.accept(methodTranspiler));
+            ParseTree prog = parser.methodDeclaration();
+            MethodTranspiler methodTranspiler = new MethodTranspiler(mb, st);
+
+            prog.accept(methodTranspiler);
+          //  System.out.println(methodTranspiler.methodSignatureToString());
+            System.out.println("Method declaration:");
+            System.out.println(methodTranspiler.methodDeclarationToString());
+
+            System.out.println("\nMethod signature:");
+            System.out.println(methodTranspiler.methodSignatureToString());
+
+
+            System.out.println("\nMethod body:");
+            System.out.println(methodTranspiler.methodBodyToString());
 *
 * Kör method-test.txt som main argument för att testa. method-different-tests.txt är bara en samling av alla olika tester.
 * */
@@ -25,65 +38,50 @@ import java.util.List;
 public class MethodTranspiler extends ConfluxParserBaseVisitor<Void> {
 
     public MethodBuilder mb;
-    private StatementTranspiler st;
+    private final StatementTranspiler st;
 
     public MethodTranspiler(MethodBuilder mb, StatementTranspiler st){
         this.mb = mb;
         this.st = st;
     }
 
+    // Visitormetoder_____________________________
     @Override
     public Void visitMethodSignature(ConfluxParser.MethodSignatureContext ctx) {
         mb.setReturnType(ctx.methodType().getText());
         mb.setIdentifier(ctx.methodName().getText());
-        if(ctx.variableList()!= null){
-            int i = 0;
-            while (ctx.variableList().variable(i) != null) {
-                String argType = ctx.variableList().variable(i).type().getText();
-                String argName = ctx.variableList().variable(i).variableId().getText();
-                mb.addParameter(argType, argName);
-                i++;
-            }
-        }
+        parameterHelper(ctx.variableList(), ctx.variableList(), ctx.variableList(), ctx.variableList());
         return null;
-    }
-
-    // Skriver ut motsvarande javakod i konsolen.
-    public String methodSignatureToString() {
-        String arguments = parametersAsString();
-        return mb.getReturnType().toCode() + " " + mb.getIdentifier().toCode() + "(" + arguments +");";
-    }
-
-    private String parametersAsString(){
-        StringBuilder parameters = new StringBuilder();
-        for (int i = 0; i < mb.getParameters().size(); i++) {
-            parameters.append(mb.getParameters().get(i).toCode());
-            if(i != mb.getParameters().size()-1) parameters.append(", ");
-        }
-        return parameters.toString();
     }
 
     @Override
     public Void visitMethodDeclaration(ConfluxParser.MethodDeclarationContext ctx) {
         mb.setReturnType(ctx.methodType().getText());
         mb.setIdentifier(ctx.methodName().getText());
-        if(ctx.variableList()!= null){
+        parameterHelper(ctx.variableList(), ctx.variableList(), ctx.variableList(), ctx.variableList());
+        List<ConfluxParser.StatementContext> statements = ctx.methodBody().statement();
+        for (ConfluxParser.StatementContext statement : statements) {
+            mb.addStatement(st.visitStatement(statement));
+        }
+        return null;
+    }
+
+    private void parameterHelper(ConfluxParser.VariableListContext ctx, ConfluxParser.VariableListContext ctx1, ConfluxParser.VariableListContext ctx2, ConfluxParser.VariableListContext ctx3) {
+        if (ctx != null) {
             int i = 0;
-            while (ctx.variableList().variable(i) != null) {
-                String argType = ctx.variableList().variable(i).type().getText();
-                String argName = ctx.variableList().variable(i).variableId().getText();
+            while (ctx1.variable(i) != null) {
+                String argType = ctx2.variable(i).type().getText();
+                String argName = ctx3.variable(i).variableId().getText();
                 mb.addParameter(argType, argName);
                 i++;
             }
         }
+    }
 
-        List<ConfluxParser.StatementContext> statements = ctx.methodBody().statement();
-
-        for (ConfluxParser.StatementContext statement : statements) {
-            mb.addStatement(st.visitStatement(statement));
-        }
-
-        return null;
+    // För testing____________________________
+    public String methodSignatureToString() {
+        String arguments = parametersAsString();
+        return mb.getReturnType().toCode() + " " + mb.getIdentifier().toCode() + "(" + arguments +");";
     }
 
     public String methodDeclarationToString(){
@@ -104,5 +102,15 @@ public class MethodTranspiler extends ConfluxParserBaseVisitor<Void> {
             if (i != mb.getStatements().size()-1) sb.append("\n");
         }
         return sb.toString();
+    }
+
+    // Helper
+    private String parametersAsString(){
+        StringBuilder parameters = new StringBuilder();
+        for (int i = 0; i < mb.getParameters().size(); i++) {
+            parameters.append(mb.getParameters().get(i).toCode());
+            if(i != mb.getParameters().size()-1) parameters.append(", ");
+        }
+        return parameters.toString();
     }
 }

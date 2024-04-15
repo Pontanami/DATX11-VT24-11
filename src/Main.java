@@ -30,10 +30,6 @@ public class Main {
             // Ensures that the parser throws a ParseCancellationException if it can't parse
             parser.setErrorHandler(new BailErrorStrategy());
 
-            //ParseTree prog = parser.statement();
-            //StatementTranspiler stmTranspiler = new StatementTranspiler(new ObserverTranspiler(new TaskQueue()));
-            //System.out.println(prog.accept(stmTranspiler));
-
             System.out.println("Testar METHOD-TRANSPILERN::::\n");
 
             MethodBuilder mb = new MethodBuilder();
@@ -44,8 +40,16 @@ public class Main {
 
             prog.accept(methodTranspiler);
           //  System.out.println(methodTranspiler.methodSignatureToString());
-            System.out.println("Method body:");
+            System.out.println("Method declaration:");
             System.out.println(methodTranspiler.methodDeclarationToString());
+
+            System.out.println("\nMethod signature:");
+            System.out.println(methodTranspiler.methodSignatureToString());
+
+
+            System.out.println("\nMethod body:");
+            System.out.println(methodTranspiler.methodBodyToString());
+
 
         } catch (IOException e) {
             e.printStackTrace();
