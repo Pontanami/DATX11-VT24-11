@@ -11,25 +11,25 @@ public class AttributeTranspiler extends DefaultTranspiler {
 
             // Visit each attribute in the attributes block
             for (ConfluxParser.DeclarationContext declaration : ctx.declaration()) {
-                //if the var keyword is not present, add private final to the attribute
+                //if the 'var' keyword is not present, add private final to the attribute
                 if (declaration.VAR() == null) {
                     result.append("private final ");
                 }
 
                 //Attributes without assignments
                 if (declaration.variableDeclaration() != null) {
-                    String variableDeclaration = declaration.variableDeclaration().getText();
-                    result.append(variableDeclaration).append(";\n");
+                    result.append(visit(declaration.variableDeclaration()));
                 }
+
                 //Attributes with assignments
                 else {
-                    String attributeType = declaration.type().getText();
+                    result.append(visit(declaration.type()));
+                    result.append(" ");
 
-                    String attributeAssignment = declaration.assignment().getText().replace("=", " = ");
-
-                    //Build the rest of the string
-                    result.append(attributeType).append(" ").append(attributeAssignment).append(";\n");
+                    result.append(visit(declaration.assignment()));
                 }
+                result.append(";");
+                result.append("\n");
             }
             return result.toString();
         }
