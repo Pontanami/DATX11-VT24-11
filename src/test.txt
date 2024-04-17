@@ -1,7 +1,9 @@
 attributes
 {
-    int age = 0;
+    int age;
     int speed = 2;
+    var int height = 4;
+    boolean buttonOn = true;
 }
 
 

@@ -39,7 +39,7 @@ typeExtend : EXTENDS Identifier ( COMMA Identifier)*;
 
 typePublishes : PUBLISHES Identifier (COMMA Identifier)* ;
 
-declaration: variableDeclaration | type assignment | arrayDeclaration;
+declaration: variableDeclaration | VAR? type assignment | arrayDeclaration;
 
 methodSignature : methodType methodName LPAREN variableList? RPAREN SEMI;
 

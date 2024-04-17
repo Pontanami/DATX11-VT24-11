@@ -29,6 +29,8 @@ REMOVE : 'remove' ;
 
 AS : 'as' ;
 
+VAR : 'var' ;
+
 //Modifiers
 PUBLIC : 'public' ;
 PRIVATE : 'private' ;
