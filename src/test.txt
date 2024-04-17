@@ -1,6 +1,8 @@
+attributes
 {
-    pub add subscriber mySubscriber.callback;
-    if (true) {
-        publish Event.new();
-    }
+    int age = 0;
+    int speed = 2;
 }
+
+
+

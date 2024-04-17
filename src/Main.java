@@ -8,10 +8,7 @@ import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.antlr.v4.runtime.BailErrorStrategy;
 import org.antlr.v4.runtime.tree.ParseTree;
 import transpiler.tasks.TaskQueue;
-import transpiler.visitors.DefaultTranspiler;
-import transpiler.visitors.ObserverTranspiler;
-import transpiler.visitors.StatementTranspiler;
-import transpiler.visitors.TypeVisitor;
+import transpiler.visitors.*;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -31,9 +28,11 @@ public class Main {
             ConfluxParser parser = new ConfluxParser(tokenStream);
             // Ensures that the parser throws a ParseCancellationException if it can't parse
             parser.setErrorHandler(new BailErrorStrategy());
-            ParseTree prog = parser.statement();
-            StatementTranspiler stmTranspiler = new StatementTranspiler(new ObserverTranspiler(new TaskQueue()));
-            System.out.println(prog.accept(stmTranspiler));
+
+            ParseTree tree = parser.attributesBlock();
+            AttributeTranspiler attributeTranspiler = new AttributeTranspiler();
+            System.out.println(tree.accept(attributeTranspiler));
+
         } catch (IOException e) {
             e.printStackTrace();
             System.exit(1);
