@@ -43,7 +43,7 @@ public class MethodTranspiler extends ConfluxParserBaseVisitor<Void> {
     @Override
     public Void visitMethodSignature(ConfluxParser.MethodSignatureContext ctx) {
         mb.setReturnType(ctx.methodType().getText());
-        mb.setIdentifier(ctx.methodName().getText());
+        mb.setIdentifier(ctx.methodId().getText());
         addParameters(ctx.variableList(), ctx.variableList(), ctx.variableList(), ctx.variableList());
         return null;
     }
@@ -51,7 +51,7 @@ public class MethodTranspiler extends ConfluxParserBaseVisitor<Void> {
     @Override
     public Void visitMethodDeclaration(ConfluxParser.MethodDeclarationContext ctx) {
         mb.setReturnType(ctx.methodType().getText());
-        mb.setIdentifier(ctx.methodName().getText());
+        mb.setIdentifier(ctx.methodId().getText());
         addParameters(ctx.variableList(), ctx.variableList(), ctx.variableList(), ctx.variableList());
         List<ConfluxParser.StatementContext> statements = ctx.methodBody().statement();
         for (ConfluxParser.StatementContext statement : statements) {
