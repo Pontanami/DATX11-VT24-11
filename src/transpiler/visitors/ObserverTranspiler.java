@@ -46,7 +46,7 @@ public class ObserverTranspiler extends ConfluxParserBaseVisitor<String> {
 
     @Override
     public String visitTypePublishes(TypePublishesContext ctx) {
-        ObserverTask task = new ObserverTask(typeId, classId, ctx.accept(new EventTypesGetter()));
+        ObserverTask task = new ObserverTask(typeId, classId);
         taskQueue.addTask(Priority.MAKE_OBSERVERS, task);
         return "";
     }
@@ -123,34 +123,34 @@ public class ObserverTranspiler extends ConfluxParserBaseVisitor<String> {
     }
 
     // Represents the task of adding all the methods/instance variables to publisher classes/interfaces
-    private static class ObserverTask implements TranspilerTask {
+    static class ObserverTask implements TranspilerTask {
         private final String typeId;
         private final String classId;
-        private final List<String> eventTypes;
 
-        ObserverTask(String typeId, String classId, List<String> eventTypes) {
+        ObserverTask(String typeId, String classId) {
             this.typeId = typeId;
             this.classId = classId;
-            this.eventTypes = eventTypes;
         }
 
         @Override
         public void run(TranspilerState state) {
-            InterfaceBuilder publisherInterface = state.lookupInterface(typeId);
-            if (publisherInterface == null) {
-                throw new RuntimeException("Cannot add publisher methods, no interface found for type identifier '"
-                                           + typeId + "'");
+            InterfaceBuilder publisherInterface = typeId == null ? null : state.lookupInterface(typeId);
+            if (publisherInterface != null) {
+                List<String> eventTypes = state.lookupSource(typeId).accept(new EventTypesGetter());
+                for (String eventType : eventTypes) {
+                    addPublisherInterfaceMethods(eventType, publisherInterface);
+                    addSubscriberCallbackInterface(state, eventType);
+                }
             }
-            for (String eventType : eventTypes) {
-                publisherInterface.addMethod(new MethodBuilder(false, addSubscriberMethod(eventType)))
-                                  .addMethod(new MethodBuilder(false, removeSubscriberMethod(eventType)));
-
-                addSubscriberCallbackInterface(state, eventType);
-            }
-            ClassBuilder publisherClass = state.lookupClass(classId);
+            ClassBuilder publisherClass = classId == null ? null : state.lookupClass(classId);
             if (publisherClass != null) {
                 addPublisherClassAttributes(publisherClass, getAllClassEvents(state));
             }
+        }
+
+        private void addPublisherInterfaceMethods(String eventType, InterfaceBuilder publisherInterface) {
+            publisherInterface.addMethod(new MethodBuilder(false, addSubscriberMethod(eventType)))
+                              .addMethod(new MethodBuilder(false, removeSubscriberMethod(eventType)));
         }
 
         private void addSubscriberCallbackInterface(TranspilerState state, String eventType) {
@@ -167,9 +167,9 @@ public class ObserverTranspiler extends ConfluxParserBaseVisitor<String> {
         // Return the set of all event types that can be published by the type from which the current class is generated
         // as well as all its supertypes
         private Set<String> getAllClassEvents(TranspilerState state) {
-            Set<String> classEventTypes = new HashSet<>(eventTypes);
+            Set<String> classEventTypes = new HashSet<>();
             // stack of supertypes that need to be checked for additional published events
-            Deque<Code> unchecked = new ArrayDeque<>(state.lookupInterface(typeId).getExtendedInterfaces());
+            Deque<Code> unchecked = new ArrayDeque<>(state.lookupClass(classId).getImplementedInterfaces());
             while (!unchecked.isEmpty()) {
                 String superType = unchecked.pop().toCode();
                 classEventTypes.addAll(state.lookupSource(superType).accept(new EventTypesGetter()));
