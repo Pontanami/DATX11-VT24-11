@@ -11,7 +11,6 @@ import transpiler.tasks.TaskQueue;
 import transpiler.tasks.TranspilerTask;
 
 import java.util.*;
-import java.util.function.Consumer;
 
 import static transpiler.tasks.TaskQueue.Priority;
 
