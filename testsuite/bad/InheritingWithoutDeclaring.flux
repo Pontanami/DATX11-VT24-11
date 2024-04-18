@@ -1,0 +1,2 @@
+type InheritingWithoutDeclaring implements AnInterface{
+}
