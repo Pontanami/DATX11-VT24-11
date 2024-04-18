@@ -11,6 +11,7 @@ import transpiler.tasks.TaskQueue;
 import transpiler.tasks.TranspilerTask;
 
 import java.util.*;
+import java.util.function.Consumer;
 
 import static transpiler.tasks.TaskQueue.Priority;
 
@@ -110,7 +111,7 @@ public class ObserverTranspiler extends ConfluxParserBaseVisitor<String> {
     }
 
     private String getExplicitEventType(ExplicitEventTypeContext ctx) {
-        return ctx == null ? null : ctx.Identifier().getText();
+        return ctx == null ? null : autobox(ctx.type());
     }
 
     // Create the name of the event handler instance variable that the publisher uses
@@ -253,17 +254,9 @@ public class ObserverTranspiler extends ConfluxParserBaseVisitor<String> {
         @Override
         public List<String> visitTypePublishes(TypePublishesContext ctx) {
             if (ctx != null) {
-                return ctx.type().stream().map(this::autobox).toList();
+                return ctx.type().stream().map(ObserverTranspiler::autobox).toList();
             }
             return defaultResult();
-        }
-        private String autobox(TypeContext ctx) {
-            String type = ctx.getText();
-            return switch (type) {
-                case "int" -> "Integer";
-                case "float" -> "Float";
-                default -> type;
-            };
         }
         @Override
         protected boolean shouldVisitNextChild(RuleNode node, List<String> currentResult) {
@@ -273,5 +266,14 @@ public class ObserverTranspiler extends ConfluxParserBaseVisitor<String> {
         protected List<String> defaultResult() {
             return List.of();
         }
+    }
+
+    private static String autobox(TypeContext ctx) {
+        String type = ctx.getText();
+        return switch (type) {
+            case "int" -> "Integer";
+            case "float" -> "Float";
+            default -> type;
+        };
     }
 }

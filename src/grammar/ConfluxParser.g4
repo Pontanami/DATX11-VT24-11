@@ -146,7 +146,7 @@ addSubscriberStatement : publisherExpression ADD SUBSCRIBER subscriberExpression
 removeSubscriberStatement : publisherExpression REMOVE SUBSCRIBER subscriberExpression
                             COLONCOLON subscriberCallback explicitEventType? SEMI;
 
-explicitEventType : LPAREN Identifier RPAREN ;
+explicitEventType : LPAREN type RPAREN ;
 publisherExpression : expression ;
 subscriberExpression : expression ;
 subscriberCallback : Identifier ;
