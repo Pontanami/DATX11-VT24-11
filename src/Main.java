@@ -55,6 +55,7 @@ public class Main {
     }
 
     private static ParseTree parse(String file) throws IOException, ParseCancellationException {
+        System.out.println("Parsing file: " + file);
         CharStream stream = CharStreams.fromFileName(file);
         ConfluxLexer lexer = new ConfluxLexer(stream);
         TokenStream tokenStream = new CommonTokenStream(lexer);

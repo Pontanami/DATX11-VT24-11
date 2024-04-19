@@ -3,7 +3,7 @@
 type Main {}
 main (String[] args) {
    Subscriber s = Subscriber.new();
-   Publisher p = PublisherSubType.new();
+   PublisherSubType p = PublisherSubType.new();
    
    p add subscriber s::onEvent1;
    p add subscriber s::onEvent2;

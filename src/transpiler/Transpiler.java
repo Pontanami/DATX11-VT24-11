@@ -54,11 +54,11 @@ public class Transpiler {
         }
         public void addClass(ClassBuilder builder) {
             String identifier = validateId(builder.getIdentifier());
-            classes.put(identifier, builder);
+            classes.put(identifier, builder.setPackage("outputTest"));
         }
         public void addInterface(InterfaceBuilder builder) {
             String identifier = validateId(builder.getIdentifier());
-            interfaces.put(identifier, builder);
+            interfaces.put(identifier, builder.setPackage("outputTest"));
         }
         public void addSource(String fileName, ParseTree source) {
             if (lookupSource(fileName) != null)

@@ -30,6 +30,7 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
         genClass = new ClassBuilder();
         taskQueue.addTask(TaskQueue.Priority.ADD_CLASS, new ClassTask());
         String typeId = ctx.Identifier().toString();
+        genClass.addImplementedInterface(ctx.Identifier().getText());
         genClass.addModifier("public");
         genClass.setIdentifier(Environment.classId(typeId));
         return visitChildren(ctx);
@@ -42,7 +43,7 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
         }
         List<ConfluxParser.MethodDeclarationContext> methods = ctx.methodDeclaration();
         for(ConfluxParser.MethodDeclarationContext method : methods){
-            MethodBuilder mB = new MethodBuilder(true);
+            MethodBuilder mB = new MethodBuilder(true).addModifier("public");
             MethodTranspiler mT = new MethodTranspiler(mB, sT);
             method.accept(mT);
             if(checkMethodExist(mT.mb.getIdentifier().toString())){
@@ -52,6 +53,19 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
                 genClass.addMethod(mT.mb);
             }
         }
+        return null;
+    }
+
+    @Override
+    public Void visitMainBlock(ConfluxParser.MainBlockContext ctx) {
+        MethodBuilder main = new MethodBuilder()
+                .addModifier("public").addModifier("static").setReturnType("void").setIdentifier("main");
+        if (!ctx.type().getText().equals("String[]")) {
+            throw new TranspilerException("Parameter to main must have type String[]");
+        }
+        main.addParameter("String[]", ctx.Identifier().getText());
+        ctx.statement().forEach(stm -> main.addStatement(sT.visitStatement(stm)));
+        genClass.addMethod(main);
         return null;
     }
     @Override
@@ -65,8 +79,9 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
             ConfluxParser.DeclarationContext attribute = aD.declaration();
             if (attribute.VAR() != null) {
                 AddVariableAttribute(attribute.declarationPart(0).Identifier().getText(), attribute.type().getText());
+            } else {
+                AddAttribute(attribute.declarationPart(0).Identifier().getText(), attribute.type().getText());
             }
-            AddAttribute(attribute.declarationPart(0).Identifier().getText(), attribute.type().getText());
 
             if(aD.AS() == null) {
                 return null;

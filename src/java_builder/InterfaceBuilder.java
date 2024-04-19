@@ -6,6 +6,7 @@ import java.util.List;
 import static java_builder.Code.fromString;
 
 public class InterfaceBuilder implements Code {
+    private Code packageName;
     private final List<Code> imports;
     private final List<Code> modifiers;
     private Code identifier;
@@ -20,6 +21,12 @@ public class InterfaceBuilder implements Code {
     }
 
     /////////////////// Setters ///////////////////
+
+    public InterfaceBuilder setPackage(String pkg) { return setPackage(fromString(pkg)); }
+    public InterfaceBuilder setPackage(Code pkg) {
+        packageName = pkg;
+        return this;
+    }
 
     public InterfaceBuilder addImport(String imp) { return addImport(fromString(imp)); }
     public InterfaceBuilder addImport(Code imp) {
@@ -62,6 +69,7 @@ public class InterfaceBuilder implements Code {
                 .endConditional().append(" {");
 
         return new CodeBuilder()
+                .beginConditional(packageName != null).append("package ").append(packageName).append(";").endConditional()
                 .beginPrefix("import ").beginSuffix(";\n").append(imports).endPrefix().endSuffix()
                 .appendLine(0, header)
                 .appendLine(1, methods)

@@ -54,7 +54,15 @@ DECIMALNUMBER : DIGIT+ [.] DIGIT+ ;
 fragment DIGIT : [0-9] ;
 fragment LETTER : [a-zA-Z] ;
 BooleanLiteral: 'true' | 'false';
-StringLiteral : '"' WORD* '"';
+StringLiteral: '"' StringCharacters? '"';
+
+fragment StringCharacters: StringCharacter+;
+
+fragment StringCharacter: ~["\\\r\n] | EscapeSequence;
+
+// §3.10.6 Escape Sequences for Character and String Literals
+
+fragment EscapeSequence: '\\' [btnfr"'\\];
 
 // Operators
 ASSIGN   : '=';

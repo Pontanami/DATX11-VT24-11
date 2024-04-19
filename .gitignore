@@ -46,3 +46,4 @@ transpiler-output/
 
 # transpiler output directory for the testsuite
 *_transpiled/
+/src/outputTest/

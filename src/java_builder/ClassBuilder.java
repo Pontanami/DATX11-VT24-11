@@ -7,6 +7,7 @@ import java.util.List;
 import static java_builder.Code.fromString;
 
 public class ClassBuilder implements Code {
+    private Code packageName;
     private final List<Code> imports;
     private final List<Code> modifiers;
     private Code identifier;
@@ -25,6 +26,12 @@ public class ClassBuilder implements Code {
     }
 
     /////////////////// Setters ///////////////////
+
+    public ClassBuilder setPackage(String pkg) { return setPackage(fromString(pkg)); }
+    public ClassBuilder setPackage(Code pkg) {
+        packageName = pkg;
+        return this;
+    }
 
     public ClassBuilder addImport(String imp) { return addImport(fromString(imp)); }
     public ClassBuilder addImport(Code imp) {
@@ -62,6 +69,9 @@ public class ClassBuilder implements Code {
     }
 
     public ClassBuilder addMethod(MethodBuilder method) {
+        if (method.getIdentifier() == null) {
+            throw new IllegalArgumentException("Cannot add method, missing identifier");
+        }
         methods.add(method);
         return this;
     }
@@ -80,6 +90,7 @@ public class ClassBuilder implements Code {
                 .endConditional().append(" {");
 
         return new CodeBuilder()
+                .beginConditional(packageName != null).append("package ").append(packageName).append(";").endConditional()
                 .beginPrefix("import ").beginSuffix(";\n").append(imports).endPrefix().endSuffix()
                 .appendLine(0, header)
                 .beginDelimiter("\n")
