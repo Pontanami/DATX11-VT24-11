@@ -15,12 +15,12 @@ import java.util.*;
 
 public class ConstructorTranspiler extends ConfluxParserBaseVisitor<Void> {
     private final TaskQueue taskQueue;
-    private final ConfluxParserVisitor<String> statementTranspiler;
+    private final ConfluxParserVisitor<Code> statementTranspiler;
     private String typeId;
     private String classId;
 
     public ConstructorTranspiler(TaskQueue taskQueue) {
-        this.statementTranspiler = new StatementTranspiler(new ObserverTranspiler(taskQueue));
+        this.statementTranspiler = new StatementTranspiler(new ObserverTranspiler(taskQueue), new ExpressionTranspiler());
         this.taskQueue = taskQueue;
     }
 

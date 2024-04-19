@@ -58,6 +58,7 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
         if(ctx.attributeDeclaration() == null){
          return null;
         }
+        /*
         List<ConfluxParser.AttributeDeclarationContext> attributedDeclarations = ctx.attributeDeclaration();
         for(ConfluxParser.AttributeDeclarationContext aD : attributedDeclarations){
             ConfluxParser.DeclarationContext attribute = aD.declaration();
@@ -81,7 +82,11 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
             } else {
                 genClass.addMethod(mB);
             }
+
+
         }
+
+         */
         return null;
     }
 
@@ -96,7 +101,7 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
                   AddAttribute(id);
               }
               else if(component.compositeDeclaration() != null){
-                  id = component.compositeDeclaration().declaration().Identifier().toString();
+                  id = component.compositeDeclaration().declaration().declarationPart(0).Identifier().toString();
                   AddAttribute(id);
               }
             }
