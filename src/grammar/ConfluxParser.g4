@@ -36,20 +36,22 @@ typeDeclaration : TYPE Identifier typeExtend? typePublishes? typeBody  ;
 
 typeExtend : EXTENDS Identifier ( COMMA Identifier)*;
 
-typePublishes : PUBLISHES Identifier (COMMA Identifier)* ;
+typePublishes : PUBLISHES type (COMMA type)* ;
 
 decoratorDeclaration: DECORATOR decoratorId DECORATES typeId LBRACE decoratorMethodDeclaration* RBRACE ;
 
 decoratorMethodDeclaration: Identifier methodBody ;
 
-declaration: VAR? type (Identifier (ASSIGN expression)?)+ ;
+declaration: VAR? type declarationPart (COMMA declarationPart)* ;
+
+declarationPart: Identifier (ASSIGN expression)? ;
 
 methodSignature : methodType methodId LPAREN variableList? RPAREN;
 
 attributeDeclaration : declaration (AS Identifier)? ;
 
 
-componentsDeclaration : compositeDeclaration | aggregateDeclaration ;
+componentsDeclaration : aggregateDeclaration | compositeDeclaration ;
 
 compositeDeclaration :   declaration handlesClause ;
 
@@ -105,6 +107,7 @@ javaStatement : expression SEMI
               | switchStatement
               | returnStatement
               | block
+              | BREAK SEMI
               ;
 
 observerStatement : publishStatement
@@ -112,13 +115,9 @@ observerStatement : publishStatement
                   | removeSubscriberStatement
                   ;
 
-assignment : qualifiedIdentifier ASSIGN (expression | arrayAssignement) ;
+assignment : assignmentLeftHandSide ASSIGN expression ;
 
-arrayAssignement : arrayInitWithLength | arrayInitWithValues ;
-
-arrayInitWithValues : LBRACE literals (COMMA literals)* RBRACE ;
-
-arrayInitWithLength : type LBRACK expression RBRACK ;
+assignmentLeftHandSide : arrayAccess | qualifiedIdentifier ;
 
 returnStatement : RETURN (expression) SEMI ;
 
@@ -134,15 +133,22 @@ whileStatement : WHILE LPAREN expression RPAREN statement ;
 
 switchStatement : SWITCH LPAREN expression RPAREN LBRACE case* default? RBRACE;
 
-case : (CASE expression COLON statement BREAK SEMI) ;
+case : CASE expression COLON statement* ;
 
-default : (DEFAULT COLON statement BREAK SEMI) ;
+default : DEFAULT COLON statement* ;
 
-publishStatement : PUBLISH expression (LPAREN Identifier RPAREN)? SEMI ;
+publishStatement : PUBLISH expression explicitEventType? SEMI ;
 
-addSubscriberStatement : expression ADD SUBSCRIBER Identifier DOT Identifier (LPAREN Identifier RPAREN)? SEMI;
+addSubscriberStatement : publisherExpression ADD SUBSCRIBER subscriberExpression
+                         COLONCOLON subscriberCallback explicitEventType? SEMI;
 
-removeSubscriberStatement : expression REMOVE SUBSCRIBER Identifier DOT Identifier (LPAREN Identifier RPAREN)? SEMI;
+removeSubscriberStatement : publisherExpression REMOVE SUBSCRIBER subscriberExpression
+                            COLONCOLON subscriberCallback explicitEventType? SEMI;
+
+explicitEventType : LPAREN type RPAREN ;
+publisherExpression : expression ;
+subscriberExpression : expression ;
+subscriberCallback : Identifier ;
 
 //Expressions -------------------------------------------------------------------------------------------------------
 expression: LPAREN expression RPAREN
@@ -150,7 +156,7 @@ expression: LPAREN expression RPAREN
           | qualifiedIdentifier
           | methodCall
           | arrayConstructor
-          | qualifiedIdentifier LBRACK expression RBRACK // array access
+          | arrayAccess
           | qualifiedIdentifier (INC | DEC)
           | (INC | DEC) qualifiedIdentifier
           | BANG expression
@@ -171,6 +177,8 @@ expression: LPAREN expression RPAREN
           ;
 
 arrayConstructor : arrayType DOT Identifier LPAREN parameterList? RPAREN ;
+
+arrayAccess : qualifiedIdentifier (LBRACK expression RBRACK)+ ;
 
 qualifiedIdentifier : Identifier (DOT Identifier)*;
 

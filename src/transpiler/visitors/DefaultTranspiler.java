@@ -9,7 +9,7 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 import transpiler.Environment;
 
 // Approximately recreates the source code, ignoring formatting,
-// useful when java syntax and [language name] syntax are the same
+// useful when java syntax and Conflux syntax are the same
 public class DefaultTranspiler extends ConfluxParserBaseVisitor<String> {
 
     @Override

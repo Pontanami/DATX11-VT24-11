@@ -1,11 +1,7 @@
 package transpiler.visitors;
 
-import grammar.gen.ConfluxParser;
-import grammar.gen.ConfluxParser.ConstructorDeclarationContext;
-import grammar.gen.ConfluxParser.TypeBodyContext;
-import grammar.gen.ConfluxParser.TypeDeclarationContext;
-import grammar.gen.ConfluxParserBaseVisitor;
-import grammar.gen.ConfluxParserVisitor;
+import grammar.gen.*;
+import grammar.gen.ConfluxParser.*;
 import java_builder.*;
 import java_builder.MethodBuilder.Parameter;
 import transpiler.Environment;
@@ -18,66 +14,43 @@ import transpiler.tasks.TranspilerTask;
 import java.util.*;
 
 public class ConstructorTranspiler extends ConfluxParserBaseVisitor<Void> {
-    private final String CONSTRUCTOR_ENUM_ID = Environment.reservedId("ConstructorID");
-
     private final TaskQueue taskQueue;
-    private final ConfluxParserVisitor<String> statementTranspiler;
-    private final ConfluxParserVisitor<String> defaultTranspiler;
-    private final Set<String> constructorIdClashes;
+    private final ConfluxParserVisitor<Code> statementTranspiler;
     private String typeId;
     private String classId;
 
     public ConstructorTranspiler(TaskQueue taskQueue) {
-        this.statementTranspiler = new StatementTranspiler(new ObserverTranspiler(taskQueue));
-        this.defaultTranspiler = new DefaultTranspiler();
-        this.constructorIdClashes = new HashSet<>();
+        this.statementTranspiler = new StatementTranspiler(new ObserverTranspiler(taskQueue), new ExpressionTranspiler());
         this.taskQueue = taskQueue;
     }
 
     @Override
     public Void visitTypeDeclaration(TypeDeclarationContext ctx) {
-        typeId = ctx.Identifier().toString();
+        typeId = ctx.Identifier().getText();
         classId = Environment.classId(typeId);
         return ctx.typeBody() == null ? null : visitTypeBody(ctx.typeBody());
     }
 
     @Override
     public Void visitTypeBody(TypeBodyContext ctx) {
-        boolean isSingleton = false;
-        List<MethodBuilder> constructors = new ArrayList<>();
         if (ctx.constructorsBlock() == null || ctx.constructorsBlock().constructorDeclaration().isEmpty()) {
-            ConfluxParserVisitor<List<Parameter>> visitor = new UninitializedComponentsVisitor();
-            List<Parameter> params = ctx.containsBlock() == null ? List.of() : ctx.containsBlock().accept(visitor);
-            constructors.add(makeDefaultConstructor(params));
+            List<Parameter> params = List.of();
+            if (ctx.componentsBlock() != null) {
+                UninitializedComponentsVisitor visitor = new UninitializedComponentsVisitor();
+                ctx.componentsBlock().accept(visitor);
+                params = visitor.uninitialized;
+            }
+            AddConstructorsTask task = new AddConstructorsTask(makeDefaultConstructor(params), false);
+            taskQueue.addTask(Priority.MAKE_CONSTRUCTORS, task);
         } else {
-            isSingleton = ctx.constructorsBlock().SINGLETON() != null;
+            boolean singleton = ctx.constructorsBlock().SINGLETON() != null;
             for (ConstructorDeclarationContext declaration : ctx.constructorsBlock().constructorDeclaration()) {
                 ConstructorVisitor visitor = new ConstructorVisitor();
                 declaration.accept(visitor);
-                constructors.add(visitor.constructor);
+                taskQueue.addTask(Priority.MAKE_CONSTRUCTORS, new AddConstructorsTask(visitor.constructor, singleton));
             }
         }
-        createTasks(isSingleton, constructors).forEach(t -> taskQueue.addTask(Priority.MAKE_CONSTRUCTORS, t));
-        taskQueue.addTask(Priority.MAKE_CONSTRUCTORS, new ConstructorEnumTask());
         return null;
-    }
-
-    // Group all constructors with equal parameters into one task, return the list of tasks
-    private List<AddConstructorsTask> createTasks(boolean isSingleton, List<MethodBuilder> constructors) {
-        List<AddConstructorsTask> tasks = new ArrayList<>();
-        for (MethodBuilder constructor : constructors) {
-            boolean matchFound = false;
-            for (AddConstructorsTask task : tasks) {
-                if (task.parametersEquals(constructor)) {
-                    task.addConstructor(constructor);
-                    matchFound = true;
-                    break;
-                }
-            }
-            if (!matchFound)
-                tasks.add(new AddConstructorsTask(constructor, isSingleton));
-        }
-        return tasks;
     }
 
     private MethodBuilder makeDefaultConstructor(List<Parameter> components) {
@@ -103,7 +76,7 @@ public class ConstructorTranspiler extends ConfluxParserBaseVisitor<Void> {
         }
         @Override
         public Void visitVariable(ConfluxParser.VariableContext ctx) {
-            constructor.addParameter(ctx.type().accept(defaultTranspiler), ctx.variableId().Identifier().toString());
+            constructor.addParameter(ctx.type().getText(), ctx.variableId().Identifier().getText());
             return null;
         }
         @Override
@@ -113,36 +86,48 @@ public class ConstructorTranspiler extends ConfluxParserBaseVisitor<Void> {
         }
     }
 
-    //TODO: the parser needs to be updated before this is implemented
-    private static class UninitializedComponentsVisitor extends ConfluxParserBaseVisitor<List<Parameter>> {
+    // Get all components that aren't initialized at declaration
+    private static class UninitializedComponentsVisitor extends ConfluxParserBaseVisitor<Void> {
+        private final List<Parameter> uninitialized = new ArrayList<>();
         @Override
-        public List<Parameter> visitContainsBlock(ConfluxParser.ContainsBlockContext ctx) {
-            return List.of();
+        public Void visitCompositeDeclaration(ConfluxParser.CompositeDeclarationContext ctx) {
+            return null; // don't go deeper into the parse tree
+        }
+        @Override
+        public Void visitAggregateDeclaration(ConfluxParser.AggregateDeclarationContext ctx) {
+            return visitDeclarationNoAssign(ctx.declarationNoAssign());
+        }
+        @Override
+        public Void visitDeclarationNoAssign(ConfluxParser.DeclarationNoAssignContext ctx) {
+            String type = ctx.type().getText();
+            ctx.Identifier().forEach(id -> uninitialized.add(new Parameter(type, id.getText())));
+            return null;
         }
     }
 
     private class AddConstructorsTask implements TranspilerTask {
-        private final String FACTORY_ID_PARAM = "factoryId";
-
-        private final List<Parameter> parameters;
-        private final Map<String, List<Code>> constructors;
+        private final String constructorEnumId = Environment.unusedIdentifier();//id for resolving constructor signatures
+        private final String constructorEnumType; // type for resolving constructor signatures
+        private final String factoryId;
+        private final List<Code> constructorArgs;
         private final boolean isSingleton;
+        private final String singletonId;
+        private final MethodBuilder constructor;
 
         AddConstructorsTask(MethodBuilder constructor, boolean isSingleton) {
-            this.parameters = new ArrayList<>(constructor.getParameters());
-            if (!parameters.isEmpty() && isSingleton)
+            List<Parameter> params = constructor.getParameters();
+            if (!params.isEmpty() && isSingleton)
                 throw new TranspilerException("Singleton constructor cannot have parameters");
-            this.constructors = new TreeMap<>();
+
+            this.factoryId = constructor.getIdentifier().toCode();
+            this.constructorEnumType = Environment.reservedId(
+                    "ConstructorId" +
+                    Character.toUpperCase(factoryId.charAt(0)) +
+                    factoryId.substring(1));
+            this.constructorArgs = params.stream().map(Parameter::getArgId).map(Code::fromString).toList();
             this.isSingleton = isSingleton;
-            addConstructor(constructor);
-        }
-
-        void addConstructor(MethodBuilder constructor) {
-            constructors.put(constructor.getIdentifier().toCode(), constructor.getStatements());
-        }
-
-        boolean parametersEquals(MethodBuilder constructor) {
-            return constructor.getParameters().equals(this.parameters);
+            this.singletonId = Environment.reservedId(factoryId + "Singleton");
+            this.constructor = constructor;
         }
 
         @Override
@@ -150,131 +135,60 @@ public class ConstructorTranspiler extends ConfluxParserBaseVisitor<Void> {
             InterfaceBuilder interfaceBuilder = state.lookupInterface(typeId);
             ClassBuilder classBuilder = state.lookupClass(classId);
 
-            MethodBuilder classConstructor = new MethodBuilder().setIdentifier(classId);
-            if (constructors.size() > 1) {//add parameter for the factory, if there are more than one for this constructor
-                classConstructor.addParameter(CONSTRUCTOR_ENUM_ID, FACTORY_ID_PARAM);
+            interfaceBuilder.addMethod(makeInterfaceFactoryMethod());
+            classBuilder.addField(makeConstructorEnum());
+            classBuilder.addConstructor(makeClassConstructor());
+            classBuilder.addMethod(makeClassFactoryMethod());
+            if (isSingleton) {
+                classBuilder.addField(makeSingletonVar());
             }
-            parameters.forEach(classConstructor::addParameter);
+        }
 
-            CodeBuilder constructorStatement = new CodeBuilder();
-            constructors.forEach((factoryId, statements) -> {
-                String singletonId = Environment.reservedId(factoryId + "Singleton");
-                factoryId = Environment.escapeJavaKeyword(factoryId);
-                if (isSingleton) {
-                    interfaceBuilder.addMethod(makeInterfaceSingletonFactoryMethod(factoryId));
-                    classBuilder.addMethod(makeClassSingletonFactoryMethod(factoryId, singletonId));
-                    classBuilder.addField(makeSingletonVar(singletonId));
-                } else {
-                    interfaceBuilder.addMethod(makeFactoryMethod(factoryId));
-                }
-                if (constructors.size() > 1) {
-                    addConstructorIfBranch(factoryId, statements, constructorStatement);
-                    constructorIdClashes.add(factoryId);
-                } else {
-                    constructorStatement.appendLine(0, statements);
-                }
-            });
-            if (constructors.size() > 1) {
-                String e = "throw new RuntimeException(\"Unhandled factory method: \" + %s);".formatted(FACTORY_ID_PARAM);
-                constructorStatement.newLine().append(e);
+        private MethodBuilder makeClassConstructor() {
+            MethodBuilder classConstructor = new MethodBuilder().addParameter(constructorEnumType, constructorEnumId);
+            constructor.getParameters().forEach(classConstructor::addParameter);
+            constructor.getStatements().forEach(classConstructor::addStatement);
+            return classConstructor.addModifier("private").setIdentifier(classId);
+        }
+
+        private Code makeSingletonVar() {
+            return new CodeBuilder().append("private static ").append(classId)
+                    .append(" ").append(singletonId).append(";");
+        }
+
+        private Code makeConstructorEnum() {
+            return Code.fromString("private enum " + constructorEnumType +
+                                   " { " + Environment.unusedIdentifier() + " }");
+        }
+
+        private MethodBuilder makeClassFactoryMethod() {
+            MethodBuilder factory = new MethodBuilder();
+            constructor.getParameters().forEach(factory::addParameter);
+            CodeBuilder returnStm;
+            if (isSingleton) {
+                returnStm = new CodeBuilder()
+                        .append("return ").append(singletonId).append(" == null ? ")
+                        .append(singletonId).append(" = new ").append(classId)
+                        .append("(").append(constructorEnumType).append(".__) : ")
+                        .append(singletonId).append(";");
+            } else {
+                returnStm = new CodeBuilder()
+                        .append("return new ").append(classId).append("(")
+                        .beginDelimiter(", ").append(constructorEnumType + ".__")
+                        .append(constructorArgs).endDelimiter()
+                        .append(");");
             }
-            classConstructor.addStatement(constructorStatement);
-            classBuilder.addConstructor(classConstructor);
+            return factory.addModifier("static").setReturnType(typeId).setIdentifier(factoryId).addStatement(returnStm);
         }
 
-        private Code makeSingletonVar(String singletonId) {
-            return new CodeBuilder()
-                    .append("private static ")
-                    .append(classId)
-                    .append(" ")
-                    .append(singletonId)
-                    .append(";");
-        }
-
-        private MethodBuilder makeFactoryMethod(String factoryId) {
-            MethodBuilder factoryMethod = new MethodBuilder()
-                    .addModifier("static")
-                    .setReturnType(typeId)
-                    .setIdentifier(factoryId);
-            parameters.forEach(factoryMethod::addParameter);
-
-            CodeBuilder factoryMethodReturnStm = new CodeBuilder()
-                    .append("return new ")
-                    .append(classId)
-                    .append("(")
-                    .beginDelimiter(", ");
-            if (constructors.size() > 1) //pass the name of the factory, if there are more than one for this constructor
-                factoryMethodReturnStm.append(classId + "." + CONSTRUCTOR_ENUM_ID + "." + factoryId);
-            parameters.forEach(p -> factoryMethodReturnStm.append(p.getArgId()));
-            factoryMethodReturnStm.endDelimiter().append(");");
-
-            factoryMethod.addStatement(factoryMethodReturnStm);
-            return factoryMethod;
-        }
-
-        private MethodBuilder makeClassSingletonFactoryMethod(String factoryId, String singletonId) {
-            return new MethodBuilder()
-                    .addModifier("static")
-                    .setReturnType(typeId)
-                    .setIdentifier(factoryId)
-                    .addStatement(new CodeBuilder()
-                            .append("return ")
-                            .append(singletonId)
-                            .append(" == null ? ")
-                            .append(singletonId)
-                            .append(" = new ")
-                            .append(classId)
-                            .append("(")
-                            .beginConditional(constructors.size() > 1)
-                            .append(CONSTRUCTOR_ENUM_ID).append(".").append(factoryId)
-                            .endConditional()
-                            .append(") : ")
-                            .append(singletonId)
-                            .append(";")
-                    );
-        }
-
-        private MethodBuilder makeInterfaceSingletonFactoryMethod(String factoryId) {
-            return new MethodBuilder()
-                    .addModifier("static")
-                    .setReturnType(typeId)
-                    .setIdentifier(factoryId)
-                    .addStatement(new CodeBuilder()
-                            .append("return ")
-                            .append(classId)
-                            .append(".")
-                            .append(factoryId)
-                            .append("();"));
-        }
-
-        private void addConstructorIfBranch(String factoryId, List<Code> statements, CodeBuilder ifStatement) {
-            if (!ifStatement.isEmpty()) {
-                ifStatement.append(" else ");
-            }
-            ifStatement.append("if (")
-                       .append(FACTORY_ID_PARAM)
-                       .append(" == ")
-                       .append(CONSTRUCTOR_ENUM_ID)
-                       .append(".")
-                       .append(factoryId)
-                       .append(") {")
-                       .appendLine(1, statements)
-                       .newLine().append("}");
-        }
-    }
-
-    private class ConstructorEnumTask implements TranspilerTask {
-        @Override
-        public void run(TranspilerState state) {
-            if (constructorIdClashes.isEmpty()) return;
-            CodeBuilder enumBuilder = new CodeBuilder()
-                    .append("enum ")
-                    .append(CONSTRUCTOR_ENUM_ID)
-                    .append(" { ")
-                    .beginDelimiter(", ");
-            constructorIdClashes.forEach(enumBuilder::append);
-            enumBuilder.append(" }");
-            state.lookupClass(classId).addField(enumBuilder);
+        private MethodBuilder makeInterfaceFactoryMethod() {
+            MethodBuilder factory = new MethodBuilder();
+            constructor.getParameters().forEach(factory::addParameter);
+            return factory.addModifier("static").setReturnType(typeId).setIdentifier(factoryId).addStatement(
+                    new CodeBuilder()
+                            .append("return ").append(classId).append(".").append(factoryId).append("(")
+                            .beginDelimiter(", ").append(constructorArgs).endDelimiter().append(");")
+            );
         }
     }
 }

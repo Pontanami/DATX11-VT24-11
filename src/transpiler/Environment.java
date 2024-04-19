@@ -15,8 +15,13 @@ public class Environment {
         return "_Class" + source;
     }
 
+    // name for generated identifiers that will not be referred to directly (e.g. when needed just for type checking)
+    public static String unusedIdentifier() {
+        return "__";
+    }
+
     // If the source is a java keyword that isn't a keyword in the project language,
-    // then the returned string should be converted into a valid java identifier
+    // then the returned string will be converted into a valid java identifier
     public static String escapeJavaKeyword(String source) {
         return UNUSED_JAVA_KEYWORDS.contains(source) ? reservedId(source) : source;
     }

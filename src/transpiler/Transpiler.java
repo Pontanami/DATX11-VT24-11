@@ -5,6 +5,7 @@ import java.util.*;
 import java_builder.*;
 import org.antlr.v4.runtime.tree.ParseTree;
 import transpiler.tasks.TaskQueue;
+import transpiler.visitors.StartVisitor;
 
 public class Transpiler {
     private final State state;
@@ -20,9 +21,10 @@ public class Transpiler {
     // Transpile all the sources
     public TranspilerOutput transpile() {
         TaskQueue taskQueue = new TaskQueue();
-
-        // TODO: create visitors and transpile, send the task queue to visitors that need it
-
+        state.getSources().forEach((name, tree) -> {
+            StartVisitor startVisitor = new StartVisitor(taskQueue);
+            tree.accept(startVisitor);
+        });
         taskQueue.runTasks(state);
         return state.createOutput(new SpaceIndentation(3));
     }
