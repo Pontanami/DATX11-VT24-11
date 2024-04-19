@@ -1,0 +1,3 @@
+type MissingMethodParameters {
+	void oops;
+}
