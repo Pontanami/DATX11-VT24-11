@@ -173,6 +173,7 @@ runTests dir (goodProgs, badProgs, badRuntimeProgs) = do
 testGoodProgram :: FilePath -> FilePath -> IO Bool
 testGoodProgram prog f = do
    (output, args) <- getTestData f
+   resetOutputDir output
    putStr $ "Running " ++ f ++ "... "
    (s,out,err) <- readProcessWithExitCode prog args ""
    putStrLnExitCode s "."
@@ -194,7 +195,8 @@ testGoodProgram prog f = do
 
 testBadProgram :: FilePath -> FilePath -> IO Bool
 testBadProgram prog f = do
-  (_, args) <- getTestData f
+  (outDir, args) <- getTestData f
+  resetOutputDir outDir
   putStr $ "Running " ++ f ++ "... "
   (s,out,err) <- readProcessWithExitCode prog args ""
   putStrLnExitCode s "."
@@ -212,7 +214,8 @@ testBadProgram prog f = do
 
 testBadRuntimeProgram :: FilePath -> FilePath -> IO Bool
 testBadRuntimeProgram prog f = do
-  (_, args) <- getTestData f
+  (outDir, args) <- getTestData f
+  resetOutputDir outDir
   putStr $ "Running " ++ f ++ "... "
   (s,out,err) <- readProcessWithExitCode prog args ""
   putStrLnExitCode s "."
@@ -251,6 +254,8 @@ getTestData f = do
       readFirstIfExists _     = return ""
       getFilesWith ext dir    = map (dir </>) . filter ((== ext) . takeExtension) <$> listDirectory dir
 
+resetOutputDir :: FilePath -> IO ()
+resetOutputDir p = listDirectory p >>= mapM_ (\f -> removeFile (p </> f))
 
 --
 -- * Main

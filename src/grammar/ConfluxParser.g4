@@ -77,7 +77,7 @@ variable :type variableId;
 parameterList : expression (COMMA expression)* ;
 
 //Top-level blocks ----------------------------------------------------------------------------------------------------
-typeBody : interfaceBlock constructorsBlock? componentsBlock? attributesBlock? methodBlock? ;
+typeBody : interfaceBlock constructorsBlock? componentsBlock? attributesBlock? methodBlock? mainBlock? ;
 
 interfaceBlock : LBRACE (methodSignature SEMI)*  RBRACE ;
 
@@ -92,6 +92,8 @@ methodBlock : METHODS LBRACE methodDeclaration* RBRACE ;
 block : LBRACE statement* RBRACE ;
 
 methodBody : LBRACE statement* RBRACE ;
+
+mainBlock : MAIN LPAREN type Identifier RPAREN LBRACE statement* RBRACE ;
 
 //Statements -------------------------------------------------------------------------------------------------------
 statement : javaStatement

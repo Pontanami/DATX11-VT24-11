@@ -16,6 +16,7 @@ FROM : 'from' ;
 VOID : 'void' ;
 ATTRIBUTES : 'attributes' ;
 CONSTRUCTORS : 'constructors' ;
+MAIN : 'main' ;
 METHODS : 'methods' ;
 RETURN : 'return' ;
 DEFAULT : 'default' ;
@@ -112,3 +113,8 @@ fragment IdentifierPart:
 WORD  : (LETTER | '_')+ ;
 NEWLINE : [\r\n]+ -> skip;
 WHITESPACE  : [ \t\r\n\u000C]+ -> skip;
+
+COMMENT: '/*' .*? '*/' -> channel(HIDDEN);
+
+LINE_COMMENT: '//' ~[\r\n]* -> channel(HIDDEN);
+
