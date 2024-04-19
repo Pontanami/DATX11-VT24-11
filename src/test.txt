@@ -1,25 +1,5 @@
-type Car {
-
-}
-constructors {
-    newVolvo() {
-        this.age = 0;
-        this.model = "volvo";
-    }
-    usedVolvo(int age) {
-        this.age = age;
-        this.model = "volvo";
-    }
-    newSaab() {
-        this.age = 0;
-        this.model = "saab";
-    }
-    usedSaab(int age) {
-        this.age = age;
-        this.model = "saab";
-    }
-    custom(int age, String model) {
-        this.age = age;
-        this.model = model;
-    }
+type Car {}
+components {
+    Engine engine;
+    Radio radio;
 }

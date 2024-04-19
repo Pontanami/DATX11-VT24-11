@@ -1,3 +1,5 @@
+// Two constructors cannot have the same signature
+
 type DuplicateConstructors {
 
 }
