@@ -1,5 +1,0 @@
-type Car {}
-components {
-    Engine engine;
-    Radio radio;
-}

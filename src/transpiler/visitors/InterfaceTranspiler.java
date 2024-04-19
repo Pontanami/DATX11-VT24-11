@@ -12,7 +12,6 @@ import transpiler.tasks.TaskQueue.Priority;
 
 public class InterfaceTranspiler extends ConfluxParserBaseVisitor<Void> {
     private final ConfluxParserVisitor<String> observerTranspiler;
-    private final ConfluxParserVisitor<MethodBuilder> methodTranspiler = null;//TODO: create it
     private final TaskQueue taskQueue;
 
     public InterfaceTranspiler(TaskQueue taskQueue) {
@@ -39,8 +38,11 @@ public class InterfaceTranspiler extends ConfluxParserBaseVisitor<Void> {
         if (ctx.typePublishes() != null) { // if there is a publishes clause
             observerTranspiler.visitTypePublishes(ctx.typePublishes());
         }
-        ctx.typeBody().interfaceBlock().methodSignature().forEach(m ->
-                interfaceBuilder.addMethod(m.accept(methodTranspiler))
+        ctx.typeBody().interfaceBlock().methodSignature().forEach(m -> {
+                    MethodBuilder mB = new MethodBuilder();
+                    m.accept(new MethodTranspiler(mB, new StatementTranspiler(observerTranspiler, new ExpressionTranspiler())));
+                    interfaceBuilder.addMethod(mB);
+                }
         );
         taskQueue.addTask(Priority.ADD_INTERFACE, state -> {
             if (state.doesJavaIdExist(typeId)) {

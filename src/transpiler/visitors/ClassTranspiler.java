@@ -4,6 +4,7 @@ import grammar.gen.ConfluxParser;
 import grammar.gen.ConfluxParserBaseVisitor;
 import java_builder.ClassBuilder;
 import java_builder.MethodBuilder;
+import transpiler.Environment;
 import transpiler.TranspilerException;
 import transpiler.TranspilerState;
 import transpiler.tasks.TaskQueue;
@@ -30,8 +31,8 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
         taskQueue.addTask(TaskQueue.Priority.ADD_CLASS, new ClassTask());
         String typeId = ctx.Identifier().toString();
         genClass.addModifier("public");
-        genClass.setIdentifier(typeId);
-        return null;
+        genClass.setIdentifier(Environment.classId(typeId));
+        return visitChildren(ctx);
     }
 
     @Override
@@ -87,7 +88,7 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
         }
 
          */
-        return null;
+        return visitChildren(ctx);
     }
 
     @Override
@@ -98,23 +99,26 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
                 String id = " ";
               if(component.aggregateDeclaration() != null){
                   id = component.aggregateDeclaration().declarationNoAssign().Identifier().toString();
-                  AddAttribute(id);
+                  String type = component.aggregateDeclaration().declarationNoAssign().type().getText();
+                  AddAttribute(id, type);
               }
               else if(component.compositeDeclaration() != null){
+                  //TODO fix [] problem elsewhere
                   id = component.compositeDeclaration().declaration().declarationPart(0).Identifier().toString();
-                  AddAttribute(id);
+                  String type = component.compositeDeclaration().declaration().type().getText();
+                  AddAttribute(id, type);
               }
             }
         }
-        return null;
+        return visitChildren(ctx);
     }
 
-    private void AddAttribute(String Identifier){
-        genClass.addField("private final " + Identifier + " " + Identifier.toLowerCase() + ";");
+    private void AddAttribute(String Identifier, String type){
+        genClass.addField("private final " + type + " " + Identifier.toLowerCase() + ";");
     }
 
-    private void AddVariableAttribute(String Identifier){
-        genClass.addField("private " + Identifier + " " + Identifier.toLowerCase() + ";");
+    private void AddVariableAttribute(String Identifier, String type){
+        genClass.addField("private " + type + " " + Identifier.toLowerCase() + ";");
     }
 
     private Boolean checkMethodExist(String methodId){
