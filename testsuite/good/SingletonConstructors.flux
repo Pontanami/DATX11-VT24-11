@@ -9,7 +9,7 @@ singleton constructors {
       this.id = 1;
    }
    instance2() {
-      this.id = 1;
+      this.id = 2;
    }
 }
 methods {

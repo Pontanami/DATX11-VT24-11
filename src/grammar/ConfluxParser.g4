@@ -36,7 +36,7 @@ typeDeclaration : TYPE Identifier typeExtend? typePublishes? typeBody  ;
 
 typeExtend : EXTENDS Identifier ( COMMA Identifier)*;
 
-typePublishes : PUBLISHES Identifier (COMMA Identifier)* ;
+typePublishes : PUBLISHES type (COMMA type)* ;
 
 decoratorDeclaration: DECORATOR decoratorId DECORATES typeId LBRACE decoratorMethodDeclaration* RBRACE ;
 
@@ -138,11 +138,18 @@ case : (CASE expression COLON statement BREAK SEMI) ;
 
 default : (DEFAULT COLON statement BREAK SEMI) ;
 
-publishStatement : PUBLISH expression (LPAREN Identifier RPAREN)? SEMI ;
+publishStatement : PUBLISH expression explicitEventType? SEMI ;
 
-addSubscriberStatement : expression ADD SUBSCRIBER Identifier DOT Identifier (LPAREN Identifier RPAREN)? SEMI;
+addSubscriberStatement : publisherExpression ADD SUBSCRIBER subscriberExpression
+                         COLONCOLON subscriberCallback explicitEventType? SEMI;
 
-removeSubscriberStatement : expression REMOVE SUBSCRIBER Identifier DOT Identifier (LPAREN Identifier RPAREN)? SEMI;
+removeSubscriberStatement : publisherExpression REMOVE SUBSCRIBER subscriberExpression
+                            COLONCOLON subscriberCallback explicitEventType? SEMI;
+
+explicitEventType : LPAREN type RPAREN ;
+publisherExpression : expression ;
+subscriberExpression : expression ;
+subscriberCallback : Identifier ;
 
 //Expressions -------------------------------------------------------------------------------------------------------
 expression: LPAREN expression RPAREN
