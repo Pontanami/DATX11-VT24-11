@@ -39,7 +39,7 @@ public class InterfaceTranspiler extends ConfluxParserBaseVisitor<Void> {
             observerTranspiler.visitTypePublishes(ctx.typePublishes());
         }
         ctx.typeBody().interfaceBlock().methodSignature().forEach(m -> {
-                    MethodBuilder mB = new MethodBuilder();
+                    MethodBuilder mB = new MethodBuilder(false);
                     m.accept(new MethodTranspiler(mB, new StatementTranspiler(observerTranspiler, new ExpressionTranspiler())));
                     interfaceBuilder.addMethod(mB);
                 }

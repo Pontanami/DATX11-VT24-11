@@ -59,25 +59,26 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
         if(ctx.attributeDeclaration() == null){
          return null;
         }
-        /*
+        //Hela detta är temp, i väntan på attributeTranspiler
         List<ConfluxParser.AttributeDeclarationContext> attributedDeclarations = ctx.attributeDeclaration();
         for(ConfluxParser.AttributeDeclarationContext aD : attributedDeclarations){
             ConfluxParser.DeclarationContext attribute = aD.declaration();
             if (attribute.VAR() != null) {
-                AddVariableAttribute(attribute.Identifier().toString());
+                AddVariableAttribute(attribute.declarationPart(0).Identifier().getText(), attribute.type().getText());
             }
-            AddAttribute(attribute.Identifier().toString());
+            AddAttribute(attribute.declarationPart(0).Identifier().getText(), attribute.type().getText());
 
             if(aD.AS() == null) {
                 return null;
             }
             //Generate getter method
             String methodId = aD.Identifier().toString();
+            String returnType = aD.declaration().type().getText();
             MethodBuilder mB = new MethodBuilder(true);
             mB.addModifier("public");
-            mB.setIdentifier("get" + methodId);
-            mB.setReturnType(methodId);
-            mB.addStatement("return this." + methodId.toLowerCase() + ";");
+            mB.setIdentifier(methodId);
+            mB.setReturnType(returnType);
+            mB.addStatement("return this." + aD.declaration().declarationPart(0).Identifier() + ";");
             if (checkMethodExist(mB.getIdentifier().toString())) {
                 throw new TranspilerException("Duplicate method id: " + mB.getIdentifier());
             } else {
@@ -87,7 +88,7 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
 
         }
 
-         */
+
         return visitChildren(ctx);
     }
 

@@ -17,15 +17,16 @@ public class StartVisitor extends ConfluxParserBaseVisitor<Void> {
         }
 
         //Need to generate a class since only the interface block is mandatory
-        if (ctx.typeDeclaration().getChildCount() > 1){
-             ctx.typeDeclaration().accept(new ClassTranspiler(taskQueue,
+        if (ctx.typeDeclaration().typeBody().getChildCount() > 1){
+            ctx.typeDeclaration().accept(new ClassTranspiler(taskQueue,
                      new StatementTranspiler(new ObserverTranspiler(taskQueue), new ExpressionTranspiler())));
+            ctx.accept(new ConstructorTranspiler(taskQueue));
         }
 
         ctx.accept(new InterfaceTranspiler(taskQueue));
 
 
-        ctx.accept(new ConstructorTranspiler(taskQueue));
+
 
         return null;
     }
