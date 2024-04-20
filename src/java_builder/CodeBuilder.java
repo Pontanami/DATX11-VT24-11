@@ -2,6 +2,7 @@ package java_builder;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static java_builder.Code.fromString;
 
@@ -23,11 +24,6 @@ public class CodeBuilder implements Code {
         public String toCode(Indentation indentation) { return "\n"; }
         public String toString() { return "[NEW_LINE]"; }
     };
-    private static final Code EMPTY = new Code() {
-        public String toCode() { return ""; }
-        public String toCode(Indentation indentation) { return indentation.string(); }
-        public String toString() { return "[EMPTY]"; }
-    };
 
     private final List<Code> fragments;
     private final Deque<Boolean> conditionalBlocks;
@@ -35,6 +31,8 @@ public class CodeBuilder implements Code {
     private boolean firstDelimitedItem; // for remembering not to put a delimiter before the first item
     private Code prefix; // null means don't use prefix
     private Code suffix; // null means don't use suffix
+    private boolean indentNext;
+    private int nextIndentDelta;
 
     public CodeBuilder() {
         fragments = new ArrayList<>();
@@ -43,6 +41,8 @@ public class CodeBuilder implements Code {
         firstDelimitedItem = false;
         prefix = null;
         suffix = null;
+        indentNext = true; //the first appended fragment may be indented
+        nextIndentDelta = 0;
     }
 
     /**
@@ -59,10 +59,7 @@ public class CodeBuilder implements Code {
      * @return this {@code CodeBuilder}
      */
     public CodeBuilder append(String... fragments) {
-        return runBuilderAction(() -> {
-            for (String s : throwOnNull(fragments))
-                appendCode(fromString(s));
-        });
+        return runBuilderAction(() -> appendStrings(List.of(throwOnNull(fragments))));
     }
 
     /**
@@ -75,10 +72,7 @@ public class CodeBuilder implements Code {
      * @throws IllegalArgumentException if {@code indentDelta < 0}
      */
     public CodeBuilder appendLine(int indentDelta, String... fragments) {
-        return runBuilderAction(() -> {
-            for (String line : throwOnNull(fragments))
-                appendCode(fromString(line), indentDelta);
-        });
+        return runBuilderAction(() -> appendStringLines(indentDelta, List.of(throwOnNull(fragments))));
     }
 
     /**
@@ -89,10 +83,7 @@ public class CodeBuilder implements Code {
      * @return this {@code CodeBuilder}
      */
     public CodeBuilder append(Code... fragments) {
-        return runBuilderAction(() -> {
-            for (Code code : throwOnNull(fragments))
-                appendCode(code);
-        });
+        return runBuilderAction(() -> appendCode(List.of(throwOnNull(fragments))));
     }
 
     /**
@@ -105,10 +96,7 @@ public class CodeBuilder implements Code {
      * @throws IllegalArgumentException if {@code indentDelta < 0}
      */
     public CodeBuilder appendLine(int indentDelta, Code... fragments) {
-        return runBuilderAction(() -> {
-            for (Code f : throwOnNull(fragments))
-                appendCode(f, indentDelta);
-        });
+        return runBuilderAction(() -> appendCodeLines(indentDelta, List.of(throwOnNull(fragments))));
     }
 
     /**
@@ -119,7 +107,7 @@ public class CodeBuilder implements Code {
      * @return this {@code CodeBuilder}
      */
     public CodeBuilder append(Collection<? extends Code> fragments) {
-        return runBuilderAction(() -> throwOnNull(fragments).forEach(this::appendCode));
+        return runBuilderAction(() -> appendCode(throwOnNull(fragments)));
     }
 
     /**
@@ -132,11 +120,11 @@ public class CodeBuilder implements Code {
      * @throws IllegalArgumentException if {@code indentDelta < 0}
      */
     public CodeBuilder appendLine(int indentDelta, Collection<? extends Code> fragments) {
-        return runBuilderAction(() -> throwOnNull(fragments).forEach(line -> appendCode(line, indentDelta)));
+        return runBuilderAction(() -> appendCodeLines(indentDelta, throwOnNull(fragments)));
     }
 
     /**
-     * Append zero or more {@code CodeBuilder}s as single units, unless this {@code CodeBuilder} is currently in a
+     * Append the given {@code CodeBuilder}s as single units, unless this {@code CodeBuilder} is currently in a
      * conditional branch that will not be executed. If this {@code CodeBuilder} is currently using a prefix, delimiter,
      * or suffix, these will be appended before/between/after each builder.
      * @param ignoreEmpty if true, empty {@code CodeBuilder}s will not be appended
@@ -144,14 +132,12 @@ public class CodeBuilder implements Code {
      * @return this {@code CodeBuilder}
      */
     public CodeBuilder append(boolean ignoreEmpty, CodeBuilder... builders) {
-        return runBuilderAction(() -> {
-            for (CodeBuilder b : throwOnNull(builders))
-                appendCode(ignoreEmpty, b);
-        });
+        return runBuilderAction(() ->
+                appendCode(Stream.of(throwOnNull(builders)).filter(b -> !ignoreEmpty || !b.isEmpty()).toList()));
     }
 
     /**
-     * Append zero or more {@code CodeBuilder}s on separate lines, unless this {@code CodeBuilder} is currently in a
+     * Append the given {@code CodeBuilder}s on separate lines, unless this {@code CodeBuilder} is currently in a
      * conditional branch that will not be executed. If this {@code CodeBuilder} is currently using a prefix, delimiter,
      * or suffix, these will be appended before/between/after each builder.
      * @param ignoreEmpty if true, empty {@code CodeBuilder}s will not be appended
@@ -161,10 +147,10 @@ public class CodeBuilder implements Code {
      * @throws IllegalArgumentException if {@code indentDelta < 0}
      */
     public CodeBuilder appendLine(boolean ignoreEmpty, int indentDelta, CodeBuilder... builders) {
-        return runBuilderAction(() -> {
-            for (CodeBuilder b : throwOnNull(builders))
-                appendCode(ignoreEmpty, indentDelta, b);
-        });
+        return runBuilderAction(() -> appendCodeLines(
+                indentDelta,
+                Stream.of(throwOnNull(builders)).filter(b -> !ignoreEmpty || !b.isEmpty()).toList()
+        ));
     }
 
     /**
@@ -181,48 +167,53 @@ public class CodeBuilder implements Code {
     public CodeBuilder newLine(int indentDelta) {
         return runBuilderAction(() -> {
             fragments.add(NEW_LINE);
-            fragments.add(EMPTY.withIndentationDelta(indentDelta));
+            indentNext = true;
+            nextIndentDelta = indentDelta;
         });
     }
 
     ////////////////////////// Helper methods for append //////////////////////////
 
-    private void appendCode(boolean ignoreEmpty, CodeBuilder builder) {
-        appendCode(ignoreEmpty, null, builder);
+    private void appendStrings(Collection<String> fragments) {
+        appendCode(fragments.stream().map(Code::fromString).toList());
     }
-    private void appendCode(boolean ignoreEmpty, Integer indentDelta, CodeBuilder builder) {
-        throwOnNull(builder);
-        if (ignoreEmpty && builder.isEmpty()) return;
-        appendCode(builder, indentDelta);
+
+    private void appendStringLines(int indentDelta, Collection<String> fragments) {
+        appendCodeLines(indentDelta, fragments.stream().map(Code::fromString).toList());
     }
+
+    private void appendCodeLines(int indentDelta, Collection<? extends Code> fragments) {
+        if (indentDelta < 0) {
+            throw new IllegalArgumentException("CodeBuilder: indentDelta < 0");
+        }
+        nextIndentDelta = indentDelta;
+        fragments.forEach(fragment -> {
+            if (!isEmpty()) this.fragments.add(NEW_LINE);
+            indentNext = true;
+            appendCode(fragment);
+        });
+    }
+
+    private void appendCode(Collection<? extends Code> fragments) {
+        fragments.forEach(this::appendCode);
+    }
+
     private void appendCode(Code fragment) {
-        appendCode(fragment, null);
-    }
-    private void appendCode(Code fragment, Integer indentDelta) {
-        throwOnNull(fragment);
-        boolean appendOnNewLine = indentDelta != null;
-        if (appendOnNewLine && indentDelta < 0)
-            throw new IllegalArgumentException("indentDelta < 0");
         if (delimiter != null) {
             if (firstDelimitedItem)
                 firstDelimitedItem = false;
             else
                 this.fragments.add(delimiter.withoutIndentation());
         }
-        if (appendOnNewLine && !isEmpty()) {
-            fragments.add(NEW_LINE);
-        }
         if (prefix != null) {
-            fragments.add(appendOnNewLine || isEmpty()
-                    ? prefix.withIndentationDelta(indentDelta != null ? indentDelta : 0)
-                    : prefix.withoutIndentation());
+            fragments.add(indentNext ? prefix.withIndentationDelta(nextIndentDelta) : prefix.withoutIndentation());
+            indentNext = false;
         }
-        fragments.add(prefix == null && (appendOnNewLine || isEmpty())
-                ? fragment.withIndentationDelta(indentDelta != null ? indentDelta : 0)
-                : fragment.withoutIndentation()
-        );
-        if (suffix != null)
+        fragments.add(indentNext ? fragment.withIndentationDelta(nextIndentDelta) : fragment.withoutIndentation());
+        indentNext = false;
+        if (suffix != null) {
             fragments.add(suffix);
+        }
     }
 
     /**
