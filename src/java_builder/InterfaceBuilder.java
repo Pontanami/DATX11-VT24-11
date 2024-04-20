@@ -5,6 +5,11 @@ import java.util.List;
 
 import static java_builder.Code.fromString;
 
+/**
+ * Builder for java interfaces. All the 'setter' methods in this class returns the instance for chaining. All methods
+ * in this class throw an {@link IllegalArgumentException} for null parameters. The toCode method requires the
+ * identifier to be set before the call, otherwise an {@link IllegalStateException} will be thrown.
+ */
 public class InterfaceBuilder implements Code {
     private Code packageName;
     private final List<Code> imports;
@@ -22,35 +27,43 @@ public class InterfaceBuilder implements Code {
 
     /////////////////// Setters ///////////////////
 
-    public InterfaceBuilder setPackage(String pkg) { return setPackage(fromString(pkg)); }
+    public InterfaceBuilder setPackage(String pkg) { return setPackage(fromString(throwOnNull(pkg))); }
     public InterfaceBuilder setPackage(Code pkg) {
-        packageName = pkg;
+        packageName = throwOnNull(pkg);
         return this;
     }
 
-    public InterfaceBuilder addImport(String imp) { return addImport(fromString(imp)); }
+    public InterfaceBuilder addImport(String imp) { return addImport(fromString(throwOnNull(imp))); }
     public InterfaceBuilder addImport(Code imp) {
-        imports.add(imp);
+        imports.add(throwOnNull(imp));
         return this;
     }
-    public InterfaceBuilder addModifier(String modifier) { return addModifier(fromString(modifier)); }
+    public InterfaceBuilder addModifier(String modifier) { return addModifier(fromString(throwOnNull(modifier))); }
     public InterfaceBuilder addModifier(Code modifier) {
-        modifiers.add(modifier);
-        return this;
-    }
-    public InterfaceBuilder setIdentifier(String identifier) { return setIdentifier(fromString(identifier)); }
-    public InterfaceBuilder setIdentifier(Code identifier) {
-        this.identifier = identifier;
+        modifiers.add(throwOnNull(modifier));
         return this;
     }
 
-    public InterfaceBuilder addExtendedInterface(String ei) { return addExtendedInterface(fromString(ei)); }
+    public InterfaceBuilder setIdentifier(String identifier) {
+        return setIdentifier(fromString(throwOnNull(identifier)));
+    }
+    public InterfaceBuilder setIdentifier(Code identifier) {
+        this.identifier = throwOnNull(identifier);
+        return this;
+    }
+
+    public InterfaceBuilder addExtendedInterface(String ei) {
+        return addExtendedInterface(fromString(throwOnNull(ei)));
+    }
     public InterfaceBuilder addExtendedInterface(Code extendedInterface) {
-        extendedInterfaces.add(extendedInterface);
+        extendedInterfaces.add(throwOnNull(extendedInterface));
         return this;
     }
 
     public InterfaceBuilder addMethod(MethodBuilder method) {
+        if (throwOnNull(method).getIdentifier() == null) {
+            throw new IllegalArgumentException("Cannot add method, missing identifier");
+        }
         methods.add(method);
         return this;
     }
@@ -66,11 +79,14 @@ public class InterfaceBuilder implements Code {
                 .beginDelimiter(" ").append(modifiers).append("interface").append(identifier)
                 .beginConditional(!extendedInterfaces.isEmpty())
                     .append("extends ").beginDelimiter(", ").append(extendedInterfaces).endDelimiter()
-                .endConditional().append(" {");
+                .endConditional().endDelimiter().append(" {");
 
         return new CodeBuilder()
-                .beginConditional(packageName != null).append("package ").append(packageName).append(";").endConditional()
-                .beginPrefix("import ").beginSuffix(";\n").append(imports).endPrefix().endSuffix()
+                .beginConditional(packageName != null)
+                    .append("package ").append(packageName).append(";").newLine(0)
+                .endConditional()
+                .beginPrefix("import ").beginSuffix(";").appendLine(0, imports).endPrefix().endSuffix()
+                .beginConditional(!imports.isEmpty()).newLine().endConditional()
                 .appendLine(0, header)
                 .appendLine(1, methods)
                 .appendLine(0, "}")
@@ -93,5 +109,11 @@ public class InterfaceBuilder implements Code {
                ", extendedInterfaces=" + extendedInterfaces +
                ", methods=" + methods +
                '}';
+    }
+
+    private <T> T throwOnNull(T obj) {
+        if (obj == null)
+            throw new IllegalArgumentException("InterfaceBuilder: null argument");
+        return obj;
     }
 }
