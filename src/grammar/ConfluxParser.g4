@@ -59,7 +59,7 @@ aggregateDeclaration : declarationNoAssign handlesClause ;
 
 declarationNoAssign : type (Identifier (COMMA Identifier)*) ;
 
-handlesClause : (HANDLES (delegateMethod (COMMA delegateMethod)*))? ;
+handlesClause : (HANDLES (delegateMethod (COMMA delegateMethod)*) (AS Identifier)?)? ;
 
 delegateMethod : methodId LPAREN variableList? RPAREN renameMethod? ;
 
