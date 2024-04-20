@@ -10,8 +10,6 @@ import transpiler.TranspilerState;
 import transpiler.tasks.TaskQueue;
 import transpiler.tasks.TranspilerTask;
 
-import javax.swing.plaf.nimbus.State;
-import java.util.ArrayList;
 import java.util.List;
 
 public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
@@ -109,6 +107,7 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
 
     @Override
     public Void visitComponentsBlock(ConfluxParser.ComponentsBlockContext ctx){
+        /*
         if(ctx.componentsDeclaration() != null){
             List<ConfluxParser.ComponentsDeclarationContext> components = ctx.componentsDeclaration();
             for(ConfluxParser.ComponentsDeclarationContext component : components){
@@ -125,7 +124,10 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
                   AddAttribute(id, type);
               }
             }
-        }
+        }*/
+        //String s = ComponentsTranspiler.visitComponentsBlock(ctx).toCode();
+        for (ComponentLine component : ComponentsTranspiler.visitComponentsBlock(ctx))
+            genClass.addField("private final " + component.component.toCode() + ";");
         return visitChildren(ctx);
     }
 
