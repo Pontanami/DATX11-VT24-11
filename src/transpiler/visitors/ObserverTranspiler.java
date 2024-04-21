@@ -24,14 +24,15 @@ public class ObserverTranspiler extends ConfluxParserBaseVisitor<String> {
     private static final String addSubscriber = Environment.reservedId("addSubscriber");
     private static final String removeSubscriber = Environment.reservedId("removeSubscriber");
 
-    private final ConfluxParserVisitor<String> expressionTranspiler = new DefaultTranspiler(); //TODO: switch to ExpressionTranspiler
     private final TaskQueue taskQueue;
+    private final ConfluxParserVisitor<String> expressionTranspiler;
 
     private String typeId;
     private String classId;
 
-    public ObserverTranspiler(TaskQueue taskQueue) {
+    public ObserverTranspiler(TaskQueue taskQueue, ConfluxParserVisitor<String> expTranspiler) {
         this.taskQueue = taskQueue;
+        this.expressionTranspiler = expTranspiler;
     }
 
     @Override
@@ -182,7 +183,7 @@ public class ObserverTranspiler extends ConfluxParserBaseVisitor<String> {
             boolean firstEvent = true;
             for (String eventType : eventTypes) {
                 if (firstEvent) {
-                    publisherClass.addImport(Environment.RUNTIME_PACKAGE + ".EventHandler");
+                    publisherClass.addImport(Environment.OBSERVERS_PACKAGE + ".EventHandler");
                     firstEvent = false;
                 }
                 publisherClass.addField(handlerVariable(eventType))

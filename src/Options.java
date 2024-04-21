@@ -43,6 +43,9 @@ final class Options {
         if (outputDir == null) {
             outputDir = getDefaultOutputDir();
         }
+        if (!new File(outputDir).isDirectory()) {
+            reportAndExit("Invalid output directory: " + outputDir);
+        }
         this.javaCompiler = javaCompiler;
         this.javaInterpreter = javaInterpreter;
         this.outputDir = outputDir;
@@ -104,7 +107,7 @@ final class Options {
     }
 
     private String getDefaultOutputDir() {
-        return Path.of(System.getProperty("user.dir"), "transpiler-output").toString();
+        return Path.of(System.getProperty("user.dir"), "transpiler_output").toString();
     }
 
     private void reportAndExit(String errMsg) {

@@ -90,15 +90,28 @@ listTestsRecursive dir = do
          fs <- map (dir </>) <$> listDirectory dir
          (fs ++) <$> concatMapM listTestsRecursive fs
    where
-      stopSeach = isTestModuleOrTranspilerOutput dir
+      stopSeach = isTestModule dir || isTranspilerOutput dir
 
-isTestModuleOrTranspilerOutput :: FilePath -> Bool
-isTestModuleOrTranspilerOutput dir = "test_" `isPrefixOf` dirName || "_transpiled" `isSuffixOf` dirName
+isTranspilerOutput :: FilePath -> Bool
+isTranspilerOutput dir = "_transpiled" `isSuffixOf` dirName
    where dirName = takeFileName dir
 
 isTestModule :: FilePath -> Bool
 isTestModule dir = "test_" `isPrefixOf` dirName && not ("_transpiled" `isSuffixOf` dirName)
    where dirName = takeFileName dir
+
+cleanUpOutput :: IO ()
+cleanUpOutput = getCurrentDirectory >>= listDirectoryRecursive >>= mapM_ removeDirectoryRecursive . filter isTranspilerOutput
+
+
+listDirectoryRecursive :: FilePath -> IO [FilePath]
+listDirectoryRecursive dir = do
+  doesDirectoryExist dir >>= \case
+    False -> return []
+    True  -> do
+      fs <- map (dir </>) <$> listDirectory dir
+      (fs ++) <$> concatMapM listDirectoryRecursive fs
+
 
 welcome :: IO ()
 welcome = putStrLn $ "This is the test program for the transpiler"
@@ -173,7 +186,6 @@ runTests dir (goodProgs, badProgs, badRuntimeProgs) = do
 testGoodProgram :: FilePath -> FilePath -> IO Bool
 testGoodProgram prog f = do
    (output, args) <- getTestData f
-   resetOutputDir output
    putStr $ "Running " ++ f ++ "... "
    (s,out,err) <- readProcessWithExitCode prog args ""
    putStrLnExitCode s "."
@@ -195,8 +207,7 @@ testGoodProgram prog f = do
 
 testBadProgram :: FilePath -> FilePath -> IO Bool
 testBadProgram prog f = do
-  (outDir, args) <- getTestData f
-  resetOutputDir outDir
+  (_, args) <- getTestData f
   putStr $ "Running " ++ f ++ "... "
   (s,out,err) <- readProcessWithExitCode prog args ""
   putStrLnExitCode s "."
@@ -214,8 +225,7 @@ testBadProgram prog f = do
 
 testBadRuntimeProgram :: FilePath -> FilePath -> IO Bool
 testBadRuntimeProgram prog f = do
-  (outDir, args) <- getTestData f
-  resetOutputDir outDir
+  (_, args) <- getTestData f
   putStr $ "Running " ++ f ++ "... "
   (s,out,err) <- readProcessWithExitCode prog args ""
   putStrLnExitCode s "."
@@ -253,9 +263,6 @@ getTestData f = do
       readFirstIfExists (f:_) = readFileIfExists f
       readFirstIfExists _     = return ""
       getFilesWith ext dir    = map (dir </>) . filter ((== ext) . takeExtension) <$> listDirectory dir
-
-resetOutputDir :: FilePath -> IO ()
-resetOutputDir p = listDirectory p >>= mapM_ (\f -> removeFile (p </> f))
 
 --
 -- * Main
@@ -335,6 +342,7 @@ usage = do
 mainOpts :: Options -> FilePath -> TestSuite -> IO ()
 mainOpts options dir testSuite = do
   welcome
+  cleanUpOutput
   when (makeFlag options) $ runMake (cabalFlag options) dir
   (good, bad, badRuntime) <- runTests dir testSuite
   putStrLn ""
