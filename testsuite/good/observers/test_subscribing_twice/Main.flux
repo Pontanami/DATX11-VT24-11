@@ -3,7 +3,7 @@ type Main {}
 main (String[] args) {
    TrafficController tc = TrafficController.new();
    GPS gps = GPS.new();
-   tc add subscriber gps.onTrafficChange;
-   tc add subscriber gps.onTrafficChange;
+   tc add subscriber gps::onTrafficChange;
+   tc add subscriber gps::onTrafficChange;
    tc.fireEvent();
 }

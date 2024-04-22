@@ -1,4 +1,4 @@
-type TrafficEvent_B {}
+type TrafficEvent {}
 constructors {
    new() {}
 }

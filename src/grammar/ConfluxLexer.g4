@@ -116,6 +116,7 @@ fragment IdentifierPart:
     | [\u0030-\u0039]
     | [\u007F-\u009F]
     | [\u00AD]
+    | [\u005F]
     | [\u0061-\u007A]
     ;
 

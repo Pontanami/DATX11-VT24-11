@@ -15,8 +15,8 @@ main (String[] args) {
    TrafficController_A tcA = TrafficController_A.new();
    TrafficController_B tcB = TrafficController_B.new();
    GPS gps = GPS.new();
-   tcA add subscriber gps.onTrafficChange_A;
-   tcB add subscriber gps.onTrafficChange_B;
+   tcA add subscriber gps::onTrafficChange_A;
+   tcB add subscriber gps::onTrafficChange_B;
    tcA.fireEvent();
    tcB.fireEvent();
 }

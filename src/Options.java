@@ -94,7 +94,8 @@ final class Options {
         } else if (isInputFileValid(fileName)) {
             list.add(fileName);
         } else {
-            reportAndExit("Invalid extension for file '%s', must be '.%s".formatted(file, INPUT_EXTENSION));
+            reportAndExit("Invalid extension for file '%s', must be '.%s or a directory"
+                    .formatted(file, INPUT_EXTENSION));
         }
     }
 
