@@ -49,8 +49,7 @@ transpiler_jar_manifest := conflux-manifest.txt
 .PHONY : default
 
 # default target (has to be defined before the other ones)
-default :
-	:
+default : ${transpiler_jar}
 
 # Create the jar file
 ${transpiler_jar} : ${java_out}/Main.class
@@ -58,7 +57,7 @@ ${transpiler_jar} : ${java_out}/Main.class
 	@echo created ${transpiler_jar}
 
 # Compile the main class    ${java_src}
-${java_out}/Main.class : ${antlr_out}/${parser}.java
+${java_out}/Main.class : ../src/Main.java
 	javac -cp "${antlr_jar};../src" -d "${java_out_dir}" Main.java
 
 # Generate the lexer and parser with antlr

@@ -30,9 +30,10 @@ decoratorId : Identifier ;
 methodType : type | VOID ;
 methodId : Identifier ;
 variableId : Identifier ;
+typeModifier : IMMUTABLE ;
 
 //Declarations --------------------------------------------------------------------------------------------------------
-typeDeclaration : TYPE Identifier typeExtend? typePublishes? typeBody  ;
+typeDeclaration : typeModifier? TYPE Identifier typeExtend? typePublishes? typeBody  ;
 
 typeExtend : EXTENDS Identifier ( COMMA Identifier)*;
 
@@ -156,7 +157,7 @@ subscriberCallback : Identifier ;
 expression: LPAREN expression RPAREN
           | literals
           | qualifiedIdentifier
-          | methodCall
+          | methodChain
           | arrayConstructor
           | arrayAccess
           | qualifiedIdentifier (INC | DEC)
@@ -183,5 +184,7 @@ arrayConstructor : arrayType DOT Identifier LPAREN parameterList? RPAREN ;
 arrayAccess : qualifiedIdentifier (LBRACK expression RBRACK)+ ;
 
 qualifiedIdentifier : Identifier (DOT Identifier)*;
+
+methodChain : methodCall (DOT methodCall)* ;
 
 methodCall : qualifiedIdentifier LPAREN parameterList? RPAREN;
