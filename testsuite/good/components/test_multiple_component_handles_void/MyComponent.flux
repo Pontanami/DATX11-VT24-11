@@ -1,11 +1,11 @@
 type MyComponent {
    void componentMethod();
 }
-attributes {
-   int id;
-}
 constructors {
    new(theId) { id = theId; }
+}
+attributes {
+   int id;
 }
 methods {
    void componentMethod() {

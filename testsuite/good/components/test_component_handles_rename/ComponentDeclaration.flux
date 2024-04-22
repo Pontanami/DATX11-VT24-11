@@ -4,7 +4,7 @@ type ComponentDeclaration {
 components {
    MyComponent c = MyComponent.new() handles componentMethod() as methodAlias();
 }
-main {
+main (String[] args) {
    ComponentDeclaration cd = ComponentDeclaration.new();
    cd.methodAlias();
 }

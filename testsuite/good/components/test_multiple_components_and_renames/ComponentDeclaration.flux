@@ -10,7 +10,7 @@ components {
       componentMethod2a() as renamedMethod1,
       componentMethod2b() as renamedMethod2
 }
-main {
+main (String[] args) {
    ComponentDeclaration cd = ComponentDeclaration.new();
    cd.componentMethod1();
    cd.componentMethod2();

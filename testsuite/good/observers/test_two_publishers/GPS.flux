@@ -11,7 +11,7 @@ methods {
       System.out.println("GPS callback B");
    }
 }
-main {
+main (String[] args) {
    TrafficController_A tcA = TrafficController_A.new();
    TrafficController_B tcB = TrafficController_B.new();
    GPS gps = GPS.new();
