@@ -39,7 +39,7 @@ gen/
 *.hi
 
 # standard transpiler output directory
-transpiler-output/
+transpiler_output/
 
 # transpiler output directory for the testsuite
 *_transpiled/
