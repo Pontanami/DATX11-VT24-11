@@ -28,7 +28,7 @@ import System.IO.Unsafe
 
 -- Executable name
 executable_name :: FilePath
-executable_name = "Transpiler.bat"
+executable_name = "../Transpiler.bat"
 
 concatMapM :: Monad m => (a -> m [b]) -> [a] -> m [b]
 concatMapM f = fmap concat . mapM f
@@ -176,7 +176,7 @@ type TestSuite = ([FilePath],[FilePath],[FilePath])
 
 runTests :: FilePath -> TestSuite -> IO ([(FilePath,Bool)],[(FilePath,Bool)],[(FilePath,Bool)])
 runTests dir (goodProgs, badProgs, badRuntimeProgs) = do
-  let prog = dir </> executable_name
+  let prog = executable_name
   checkFileExists prog
   good       <- mapM (\f -> (f,) <$> testGoodProgram       prog f) goodProgs
   bad        <- mapM (\f -> (f,) <$> testBadProgram        prog f) badProgs
