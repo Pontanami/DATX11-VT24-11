@@ -58,7 +58,7 @@ ${transpiler_jar} : ${java_out}/Main.class
 
 # Compile the main class    ${java_src}
 ${java_out}/Main.class : ${antlr_out}/${parser}.java
-	javac -cp ${antlr_jar} -d "${java_out_dir}" Main.java
+	javac -cp "${antlr_jar};../src" -d "${java_out_dir}" Main.java
 
 # Generate the lexer and parser with antlr
 ${antlr_out}/${parser}.java : grammar/${parser}.g4 grammar/${lexer}.g4
