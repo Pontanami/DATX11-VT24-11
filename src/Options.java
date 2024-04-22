@@ -66,7 +66,7 @@ final class Options {
                 it.remove();
                 String value = defaultValue;
                 if (it.hasNext()) {
-                    arg = it.next();
+                    arg = it.next(); //TODO: this is not a stable solution
                     if (!isInputFileValid(arg) && arg.charAt(0) != '-') {//the next arg is not a source file or a flag
                         value = arg;
                         it.remove();
@@ -104,7 +104,7 @@ final class Options {
     }
 
     private String getDefaultOutputDir() {
-        return Path.of(System.getProperty("user.dir"), "transpiler-output").toString();
+        return Path.of(System.getProperty("user.dir"), "transpiler_output").toString();
     }
 
     private void reportAndExit(String errMsg) {

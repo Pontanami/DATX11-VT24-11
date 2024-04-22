@@ -2,7 +2,9 @@ package transpiler.visitors;
 
 import grammar.gen.ConfluxParser;
 import grammar.gen.ConfluxParserBaseVisitor;
+import grammar.gen.ConfluxParserVisitor;
 import java_builder.ClassBuilder;
+import java_builder.Code;
 import java_builder.MethodBuilder;
 import transpiler.Environment;
 import transpiler.TranspilerException;
@@ -17,8 +19,8 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
     private ClassBuilder genClass;
     private final TaskQueue taskQueue;
 
-    private final StatementTranspiler sT;
-    public ClassTranspiler(TaskQueue _taskQueue, StatementTranspiler statementTranspiler) {
+    private final ConfluxParserVisitor<Code> sT;
+    public ClassTranspiler(TaskQueue _taskQueue, ConfluxParserVisitor<Code> statementTranspiler) {
         taskQueue = _taskQueue;
         sT = statementTranspiler;
     }
@@ -26,9 +28,9 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
     @Override
     public Void visitTypeDeclaration(ConfluxParser.TypeDeclarationContext ctx) {
         genClass = new ClassBuilder();
-        taskQueue.addTask(TaskQueue.Priority.ADD_CLASS, new ClassTask());
+        taskQueue.addTask(TaskQueue.Priority.ADD_CLASS, new ClassTask(genClass));
         String typeId = ctx.Identifier().toString();
-        genClass.addImplementedInterface(ctx.Identifier().getText());
+        genClass.addImplementedInterface(typeId);
         genClass.addModifier("public");
         genClass.setIdentifier(Environment.classId(typeId));
         return visitChildren(ctx);
@@ -54,18 +56,6 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
         return null;
     }
 
-    @Override
-    public Void visitMainBlock(ConfluxParser.MainBlockContext ctx) {
-        MethodBuilder main = new MethodBuilder()
-                .addModifier("public").addModifier("static").setReturnType("void").setIdentifier("main");
-        if (!ctx.type().getText().equals("String[]")) {
-            throw new TranspilerException("Parameter to main must have type String[]");
-        }
-        main.addParameter("String[]", ctx.Identifier().getText());
-        ctx.statement().forEach(stm -> main.addStatement(sT.visitStatement(stm)));
-        genClass.addMethod(main);
-        return null;
-    }
     @Override
     public Void visitAttributesBlock(ConfluxParser.AttributesBlockContext ctx){
         if(ctx.attributeDeclaration() == null){
@@ -149,7 +139,10 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
         return false;
 
     }
-    private class ClassTask implements TranspilerTask {
+    private static class ClassTask implements TranspilerTask {
+        private final ClassBuilder genClass;
+
+        private ClassTask(ClassBuilder genClass) { this.genClass = genClass; }
 
         @Override
         public void run(TranspilerState state) {

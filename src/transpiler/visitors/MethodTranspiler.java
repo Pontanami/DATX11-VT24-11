@@ -25,6 +25,8 @@ package transpiler.visitors;
 
 import grammar.gen.ConfluxParser;
 import grammar.gen.ConfluxParserBaseVisitor;
+import grammar.gen.ConfluxParserVisitor;
+import java_builder.Code;
 import java_builder.MethodBuilder;
 
 import java.util.List;
@@ -32,9 +34,9 @@ import java.util.List;
 public class MethodTranspiler extends ConfluxParserBaseVisitor<Void> {
 
     public MethodBuilder mb;
-    private final StatementTranspiler st;
+    private final ConfluxParserVisitor<Code> st;
 
-    public MethodTranspiler(MethodBuilder mb, StatementTranspiler st){
+    public MethodTranspiler(MethodBuilder mb, ConfluxParserVisitor<Code> st){
         this.mb = mb;
         this.st = st;
     }
