@@ -49,7 +49,8 @@ transpiler_jar_manifest := conflux-manifest.txt
 .PHONY : default
 
 # default target (has to be defined before the other ones)
-default : ${transpiler_jar}
+default :
+	:
 
 # Create the jar file
 ${transpiler_jar} : ${java_out}/Main.class
