@@ -84,9 +84,9 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
             mB.setIdentifier(methodId);
             mB.setReturnType(returnType);
             mB.addStatement("return this." + aD.declaration().declarationPart(0).Identifier() + ";");
-            taskQueue.addTask(null, state -> {
+            taskQueue.addTask(TaskQueue.Priority.ADD_GETTER, state -> {
                 boolean found = false;
-                for (MethodBuilder m : state.lookupClass(interfaceId).getMethods()) {
+                for (MethodBuilder m : state.lookupInterface(interfaceId).getMethods()) {
                     if (m.signatureEquals(mB)) {
                         found = true;
                     }
