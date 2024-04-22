@@ -6,6 +6,7 @@ import grammar.gen.ConfluxParserVisitor;
 import java_builder.ClassBuilder;
 import java_builder.Code;
 import java_builder.MethodBuilder;
+import org.antlr.v4.runtime.misc.Pair;
 import transpiler.Environment;
 import transpiler.TranspilerException;
 import transpiler.TranspilerState;
@@ -129,8 +130,11 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
             }
         }*/
         //String s = ComponentsTranspiler.visitComponentsBlock(ctx).toCode();
-        for (ComponentLine component : ComponentsTranspiler.visitComponentsBlock(ctx)) {
-            genClass.addField("private final " + component.getComponent().toCode() + ";");
+        for (Pair<String, List<MethodBuilder>> component : ComponentsTranspiler.visitComponentsBlock(ctx)) {
+            genClass.addField("private final " + component.a + ";");
+            if(!component.b.isEmpty())
+                for (MethodBuilder mb : component.b)
+                    genClass.addMethod(mb);
         }
 
         return visitChildren(ctx);
