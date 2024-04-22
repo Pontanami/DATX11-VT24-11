@@ -2,10 +2,6 @@ type ManyConstructors {
    int getAge();
    String getModel();
 }
-attributes {
-   int age;
-   String model;
-}
 constructors {
     newVolvo() {
         this.age = 0;
@@ -28,11 +24,15 @@ constructors {
         this.model = model;
     }
 }
+attributes {
+   String model;
+   int age;
+}
 methods {
    int getAge() { return age; }
    String getModel() { return model; }
 }
-main {
+main (String[] args) {
    int usedVolvoAge = 1;
    int usedSaabAge = 2;
    int customAge = 3;

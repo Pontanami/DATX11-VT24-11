@@ -18,6 +18,7 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
 
     private ClassBuilder genClass;
     private final TaskQueue taskQueue;
+    private String interfaceId;
 
     private final ConfluxParserVisitor<Code> sT;
     public ClassTranspiler(TaskQueue _taskQueue, ConfluxParserVisitor<Code> statementTranspiler) {
@@ -27,6 +28,7 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
 
     @Override
     public Void visitTypeDeclaration(ConfluxParser.TypeDeclarationContext ctx) {
+        interfaceId = ctx.Identifier().getText();
         genClass = new ClassBuilder();
         taskQueue.addTask(TaskQueue.Priority.ADD_CLASS, new ClassTask(genClass));
         String typeId = ctx.Identifier().toString();
@@ -72,7 +74,7 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
             }
 
             if(aD.AS() == null) {
-                return null;
+                continue;
             }
             //Generate getter method
             String methodId = aD.Identifier().toString();
@@ -82,6 +84,17 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
             mB.setIdentifier(methodId);
             mB.setReturnType(returnType);
             mB.addStatement("return this." + aD.declaration().declarationPart(0).Identifier() + ";");
+            taskQueue.addTask(null, state -> {
+                boolean found = false;
+                for (MethodBuilder m : state.lookupClass(interfaceId).getMethods()) {
+                    if (m.signatureEquals(mB)) {
+                        found = true;
+                    }
+                }
+                if (!found) {
+                    throw new TranspilerException("Getter method not present in interface");
+                }
+            } );
             if (checkMethodExist(mB.getIdentifier().toString())) {
                 throw new TranspilerException("Duplicate method id: " + mB.getIdentifier());
             } else {
