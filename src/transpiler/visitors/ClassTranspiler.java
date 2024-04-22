@@ -129,8 +129,10 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
             }
         }*/
         //String s = ComponentsTranspiler.visitComponentsBlock(ctx).toCode();
-        for (ComponentLine component : ComponentsTranspiler.visitComponentsBlock(ctx))
-            genClass.addField("private final " + component.component.toCode() + ";");
+        for (ComponentLine component : ComponentsTranspiler.visitComponentsBlock(ctx)) {
+            genClass.addField("private final " + component.getComponent().toCode() + ";");
+        }
+
         return visitChildren(ctx);
     }
 
