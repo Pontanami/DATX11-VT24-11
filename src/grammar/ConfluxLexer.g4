@@ -11,6 +11,7 @@ STRING : 'String' ;
 //Keywords
 TYPE : 'type' ;
 EXTENDS : 'extends' ;
+IMMUTABLE : 'immutable' ;
 COMPONENTS : 'components' ;
 FROM : 'from' ;
 VOID : 'void' ;

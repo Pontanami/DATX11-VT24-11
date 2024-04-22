@@ -2,5 +2,5 @@ type AtrributeDeclarationMultiple2 {
 
 }
 attributes {
-   int x = 2, y, z = 4;
+   var int x = 2, y, z = 4;
 }

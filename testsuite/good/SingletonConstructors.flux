@@ -15,7 +15,7 @@ singleton constructors {
 methods {
    int getId() { return id; }
 }
-main {
+main (String[] args) {
    System.out.println(SingletonConstructors.instance1() == SingletonConstructors.instance1()); //should point to the same object
    System.out.println(SingletonConstructors.instance1() != SingletonConstructors.instance2()); //should not point to the same object
    System.out.println(SingletonConstructors.instance2() == SingletonConstructors.instance2()); //should point to the same object

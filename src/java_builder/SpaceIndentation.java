@@ -2,15 +2,26 @@ package java_builder;
 
 import java.util.Objects;
 
-// Indentation with spaces
+/**
+ * Indentation using spaces. Objects of this class are immutable.
+ */
 public final class SpaceIndentation implements Indentation {
     private final int tabSize;
     private final int tabLevel;
 
+    /**
+     * Create a SpaceIndentation object using the given tab size
+     * @param tabSize the size of one tab in spaces
+     */
     public SpaceIndentation(int tabSize) {
         this(tabSize, 0);
     }
 
+    /**
+     * Create a SpaceIndentation object using the given tab size and level
+     * @param tabSize the size of one tab in spaces
+     * @param tabLevel the number of tabs
+     */
     public SpaceIndentation(int tabSize, int tabLevel) {
         this.tabSize = requireNonNegative(tabSize);
         this.tabLevel = requireNonNegative(tabLevel);

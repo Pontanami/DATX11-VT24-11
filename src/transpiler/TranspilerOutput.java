@@ -7,5 +7,7 @@ public interface TranspilerOutput {
 
     String getTranspiledCode(String fileName);
 
+    String getPackageName();
+
     String lookupMainFileName(); // null if no main file exist
 }

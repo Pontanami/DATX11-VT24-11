@@ -2,7 +2,9 @@ package transpiler.visitors;
 
 import grammar.gen.ConfluxParser;
 import grammar.gen.ConfluxParserBaseVisitor;
+import grammar.gen.ConfluxParserVisitor;
 import java_builder.ClassBuilder;
+import java_builder.Code;
 import java_builder.MethodBuilder;
 import transpiler.Environment;
 import transpiler.TranspilerException;
@@ -10,27 +12,27 @@ import transpiler.TranspilerState;
 import transpiler.tasks.TaskQueue;
 import transpiler.tasks.TranspilerTask;
 
-import javax.swing.plaf.nimbus.State;
-import java.util.ArrayList;
 import java.util.List;
 
 public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
 
     private ClassBuilder genClass;
     private final TaskQueue taskQueue;
+    private String interfaceId;
 
-    private final StatementTranspiler sT;
-    public ClassTranspiler(TaskQueue _taskQueue, StatementTranspiler statementTranspiler) {
+    private final ConfluxParserVisitor<Code> sT;
+    public ClassTranspiler(TaskQueue _taskQueue, ConfluxParserVisitor<Code> statementTranspiler) {
         taskQueue = _taskQueue;
         sT = statementTranspiler;
     }
 
     @Override
     public Void visitTypeDeclaration(ConfluxParser.TypeDeclarationContext ctx) {
+        interfaceId = ctx.Identifier().getText();
         genClass = new ClassBuilder();
-        taskQueue.addTask(TaskQueue.Priority.ADD_CLASS, new ClassTask());
+        taskQueue.addTask(TaskQueue.Priority.ADD_CLASS, new ClassTask(genClass));
         String typeId = ctx.Identifier().toString();
-        genClass.addImplementedInterface(ctx.Identifier().getText());
+        genClass.addImplementedInterface(typeId);
         genClass.addModifier("public");
         genClass.setIdentifier(Environment.classId(typeId));
         return visitChildren(ctx);
@@ -57,18 +59,6 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
     }
 
     @Override
-    public Void visitMainBlock(ConfluxParser.MainBlockContext ctx) {
-        MethodBuilder main = new MethodBuilder()
-                .addModifier("public").addModifier("static").setReturnType("void").setIdentifier("main");
-        if (!ctx.type().getText().equals("String[]")) {
-            throw new TranspilerException("Parameter to main must have type String[]");
-        }
-        main.addParameter("String[]", ctx.Identifier().getText());
-        ctx.statement().forEach(stm -> main.addStatement(sT.visitStatement(stm)));
-        genClass.addMethod(main);
-        return null;
-    }
-    @Override
     public Void visitAttributesBlock(ConfluxParser.AttributesBlockContext ctx){
         if(ctx.attributeDeclaration() == null){
          return null;
@@ -84,7 +74,7 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
             }
 
             if(aD.AS() == null) {
-                return null;
+                continue;
             }
             //Generate getter method
             String methodId = aD.Identifier().toString();
@@ -94,6 +84,17 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
             mB.setIdentifier(methodId);
             mB.setReturnType(returnType);
             mB.addStatement("return this." + aD.declaration().declarationPart(0).Identifier() + ";");
+            taskQueue.addTask(TaskQueue.Priority.ADD_GETTER, state -> {
+                boolean found = false;
+                for (MethodBuilder m : state.lookupInterface(interfaceId).getMethods()) {
+                    if (m.signatureEquals(mB)) {
+                        found = true;
+                    }
+                }
+                if (!found) {
+                    throw new TranspilerException("Getter method not present in interface");
+                }
+            } );
             if (checkMethodExist(mB.getIdentifier().toString())) {
                 throw new TranspilerException("Duplicate method id: " + mB.getIdentifier());
             } else {
@@ -109,6 +110,7 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
 
     @Override
     public Void visitComponentsBlock(ConfluxParser.ComponentsBlockContext ctx){
+        /*
         if(ctx.componentsDeclaration() != null){
             List<ConfluxParser.ComponentsDeclarationContext> components = ctx.componentsDeclaration();
             for(ConfluxParser.ComponentsDeclarationContext component : components){
@@ -125,7 +127,10 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
                   AddAttribute(id, type);
               }
             }
-        }
+        }*/
+        //String s = ComponentsTranspiler.visitComponentsBlock(ctx).toCode();
+        for (ComponentLine component : ComponentsTranspiler.visitComponentsBlock(ctx))
+            genClass.addField("private final " + component.component.toCode() + ";");
         return visitChildren(ctx);
     }
 
@@ -147,7 +152,10 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
         return false;
 
     }
-    private class ClassTask implements TranspilerTask {
+    private static class ClassTask implements TranspilerTask {
+        private final ClassBuilder genClass;
+
+        private ClassTask(ClassBuilder genClass) { this.genClass = genClass; }
 
         @Override
         public void run(TranspilerState state) {

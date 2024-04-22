@@ -19,8 +19,8 @@ public class ConstructorTranspiler extends ConfluxParserBaseVisitor<Void> {
     private String typeId;
     private String classId;
 
-    public ConstructorTranspiler(TaskQueue taskQueue) {
-        this.statementTranspiler = new StatementTranspiler(new ObserverTranspiler(taskQueue), new ExpressionTranspiler());
+    public ConstructorTranspiler(TaskQueue taskQueue, ConfluxParserVisitor<Code> stmTranspiler) {
+        this.statementTranspiler = stmTranspiler;
         this.taskQueue = taskQueue;
     }
 
@@ -40,14 +40,15 @@ public class ConstructorTranspiler extends ConfluxParserBaseVisitor<Void> {
                 ctx.componentsBlock().accept(visitor);
                 params = visitor.uninitialized;
             }
-            AddConstructorsTask task = new AddConstructorsTask(makeDefaultConstructor(params), false);
+            var task = new AddConstructorsTask(typeId, classId, makeDefaultConstructor(params), false);
             taskQueue.addTask(Priority.MAKE_CONSTRUCTORS, task);
         } else {
             boolean singleton = ctx.constructorsBlock().SINGLETON() != null;
             for (ConstructorDeclarationContext declaration : ctx.constructorsBlock().constructorDeclaration()) {
                 ConstructorVisitor visitor = new ConstructorVisitor();
                 declaration.accept(visitor);
-                taskQueue.addTask(Priority.MAKE_CONSTRUCTORS, new AddConstructorsTask(visitor.constructor, singleton));
+                AddConstructorsTask task = new AddConstructorsTask(typeId, classId, visitor.constructor, singleton);
+                taskQueue.addTask(Priority.MAKE_CONSTRUCTORS, task);
             }
         }
         return null;
@@ -105,20 +106,25 @@ public class ConstructorTranspiler extends ConfluxParserBaseVisitor<Void> {
         }
     }
 
-    private class AddConstructorsTask implements TranspilerTask {
+    private static class AddConstructorsTask implements TranspilerTask {
         private final String constructorEnumId = Environment.unusedIdentifier();//id for resolving constructor signatures
         private final String constructorEnumType; // type for resolving constructor signatures
+
+        private final String typeId;
+        private final String classId;
         private final String factoryId;
         private final List<Code> constructorArgs;
         private final boolean isSingleton;
         private final String singletonId;
         private final MethodBuilder constructor;
 
-        AddConstructorsTask(MethodBuilder constructor, boolean isSingleton) {
+        AddConstructorsTask(String typeId, String classId, MethodBuilder constructor, boolean isSingleton) {
             List<Parameter> params = constructor.getParameters();
             if (!params.isEmpty() && isSingleton)
                 throw new TranspilerException("Singleton constructor cannot have parameters");
 
+            this.typeId = typeId;
+            this.classId = classId;
             this.factoryId = constructor.getIdentifier().toCode();
             this.constructorEnumType = Environment.reservedId(
                     "ConstructorId" +
