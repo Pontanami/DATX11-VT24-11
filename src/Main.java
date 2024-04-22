@@ -17,11 +17,12 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class Main {
-    private static final String CONFLUX_JAR =
-            Path.of(System.getProperty("user.dir"),"conflux.jar").toString();
+    private static final String CONFLUX_JAR = getConfluxJar();
+            //Path.of(System.getProperty("user.dir"),"conflux.jar").toString();
 
     public static void main(String[] args) {
         try {
@@ -98,7 +99,6 @@ public class Main {
             throws IOException, InterruptedException {
         List<String> compileJavaCmd = new ArrayList<>();
         compileJavaCmd.add(compiler);
-
         compileJavaCmd.add("-cp"); // include the runtime classes
         compileJavaCmd.add('"' + CONFLUX_JAR + '"');
 
@@ -127,5 +127,14 @@ public class Main {
     private static void runCommandWait(List<String> call) throws IOException, InterruptedException {
         Process process = new ProcessBuilder(call).inheritIO().start();
         process.waitFor();
+    }
+
+    private static String getConfluxJar() {
+        String cj = Path.of(System.getProperty("user.dir"),"conflux.jar").toString();
+        if (new File(cj).isFile()) {
+            return cj;
+        } else {
+            return "../conflux.jar";//TODO: find a way to find the jar file in other places
+        }
     }
 }
