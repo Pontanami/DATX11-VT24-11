@@ -35,7 +35,7 @@ public class AttributeTranspiler extends DefaultTranspiler {
 
         String returnType = visit(ctx.declaration().type());
         String attributeName = ctx.declaration().declarationPart(0).Identifier().getText();
-        String methodName = "get" + attributeName; //TODO: implement correct methodName
+        String methodName = ctx.Identifier().getText();
 
 
         MethodBuilder methodBuilder = new MethodBuilder();
