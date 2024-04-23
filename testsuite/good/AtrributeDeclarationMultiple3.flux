@@ -2,5 +2,5 @@ type AtrributeDeclarationMultiple3 {
 
 }
 attributes {
-   int x, y, z;
+   var int x, y, z;
 }

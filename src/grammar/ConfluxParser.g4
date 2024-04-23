@@ -30,9 +30,10 @@ decoratorId : Identifier ;
 methodType : type | VOID ;
 methodId : Identifier ;
 variableId : Identifier ;
+typeModifier : IMMUTABLE ;
 
 //Declarations --------------------------------------------------------------------------------------------------------
-typeDeclaration : TYPE Identifier typeExtend? typePublishes? typeBody  ;
+typeDeclaration : typeModifier? TYPE Identifier typeExtend? typePublishes? typeBody  ;
 
 typeExtend : EXTENDS Identifier ( COMMA Identifier)*;
 
@@ -59,7 +60,7 @@ aggregateDeclaration : declarationNoAssign handlesClause ;
 
 declarationNoAssign : type (Identifier (COMMA Identifier)*) ;
 
-handlesClause : (HANDLES (delegateMethod (COMMA delegateMethod)*))? ;
+handlesClause : (HANDLES (delegateMethod (COMMA delegateMethod)*) (AS Identifier)?)? ;
 
 delegateMethod : methodId LPAREN variableList? RPAREN renameMethod? ;
 
@@ -77,7 +78,7 @@ variable :type variableId;
 parameterList : expression (COMMA expression)* ;
 
 //Top-level blocks ----------------------------------------------------------------------------------------------------
-typeBody : interfaceBlock constructorsBlock? componentsBlock? attributesBlock? methodBlock? ;
+typeBody : interfaceBlock constructorsBlock? componentsBlock? attributesBlock? methodBlock? mainBlock? ;
 
 interfaceBlock : LBRACE (methodSignature SEMI)*  RBRACE ;
 
@@ -92,6 +93,8 @@ methodBlock : METHODS LBRACE methodDeclaration* RBRACE ;
 block : LBRACE statement* RBRACE ;
 
 methodBody : LBRACE statement* RBRACE ;
+
+mainBlock : MAIN LPAREN type Identifier RPAREN LBRACE statement* RBRACE ;
 
 //Statements -------------------------------------------------------------------------------------------------------
 statement : javaStatement
@@ -154,7 +157,7 @@ subscriberCallback : Identifier ;
 expression: LPAREN expression RPAREN
           | literals
           | qualifiedIdentifier
-          | methodCall
+          | methodChain
           | arrayConstructor
           | arrayAccess
           | qualifiedIdentifier (INC | DEC)
@@ -181,5 +184,7 @@ arrayConstructor : arrayType DOT Identifier LPAREN parameterList? RPAREN ;
 arrayAccess : qualifiedIdentifier (LBRACK expression RBRACK)+ ;
 
 qualifiedIdentifier : Identifier (DOT Identifier)*;
+
+methodChain : methodCall (DOT methodCall)* ;
 
 methodCall : qualifiedIdentifier LPAREN parameterList? RPAREN;

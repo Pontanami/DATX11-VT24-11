@@ -15,6 +15,8 @@ public class TaskQueue {
     public enum Priority {
         ADD_INTERFACE,
         ADD_CLASS,
+        ADD_GETTER,
+        ADD_MAIN_CLASS,
         CHECK_IMMUTABLE,
         MAKE_CONSTRUCTORS,
         MAKE_OBSERVERS,

@@ -1,3 +1,4 @@
+import java.io.File;
 import java.nio.file.Path;
 import java.util.*;
 
@@ -25,12 +26,14 @@ final class Options {
 
     Options(String[] args) {
         List<String> argList = new ArrayList<>(List.of(args));
+        List<String> sourceFiles = new ArrayList<>();
 
         String javaCompiler = parseFlag(COMPILE_FLAG, DEFAULT_COMPILER, argList);
         String javaInterpreter = parseFlag(RUN_FLAG, DEFAULT_INTERPRETER, argList);
         String outputDir = parseFlag(OUTPUT_FLAG, null, argList);
 
-        argList.forEach(this::validateInputFile);// the remaining args must be Conflux files
+
+        argList.forEach(f -> addInputFileToList(f, sourceFiles));// the remaining args must be Conflux files
         if (argList.isEmpty()) {
             reportAndExit("No input files");
         }
@@ -43,7 +46,7 @@ final class Options {
         this.javaCompiler = javaCompiler;
         this.javaInterpreter = javaInterpreter;
         this.outputDir = outputDir;
-        this.sourceFiles = List.copyOf(argList);
+        this.sourceFiles = List.copyOf(sourceFiles);
     }
 
     // Parse a flag and its argument. If the flag isn't present return null. If flag is present, remove the flag
@@ -63,7 +66,7 @@ final class Options {
                 it.remove();
                 String value = defaultValue;
                 if (it.hasNext()) {
-                    arg = it.next();
+                    arg = it.next(); //TODO: this is not a stable solution
                     if (!isInputFileValid(arg) && arg.charAt(0) != '-') {//the next arg is not a source file or a flag
                         value = arg;
                         it.remove();
@@ -79,9 +82,21 @@ final class Options {
         return flagValue;
     }
 
-    private void validateInputFile(String file) {
-        if (!isInputFileValid(file))
-            reportAndExit("Invalid extension for file '%s', must be '.%s".formatted(file, INPUT_EXTENSION));
+    private void addInputFileToList(String fileName, List<String> list) {
+        File file = new File(fileName);
+        if (file.isDirectory()) {
+            for (File fileInDir : file.listFiles()) {
+                String path = fileInDir.getAbsolutePath();
+                if (isInputFileValid(path)) {
+                    list.add(path);
+                }
+            }
+        } else if (isInputFileValid(fileName)) {
+            list.add(fileName);
+        } else {
+            reportAndExit("Invalid extension for file '%s', must be '.%s or a directory"
+                    .formatted(file, INPUT_EXTENSION));
+        }
     }
 
     private boolean isInputFileValid(String file) {
@@ -90,7 +105,7 @@ final class Options {
     }
 
     private String getDefaultOutputDir() {
-        return Path.of(System.getProperty("user.dir"), "transpiler-output").toString();
+        return Path.of(System.getProperty("user.dir"), "transpiler_output").toString();
     }
 
     private void reportAndExit(String errMsg) {

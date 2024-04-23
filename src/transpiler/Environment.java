@@ -4,7 +4,7 @@ import java.util.Set;
 
 // Global constants for the transpiler
 public class Environment {
-    public static final String RUNTIME_PACKAGE = "transpiler.runtime";
+    public static final String OBSERVERS_PACKAGE = "runtime.observers";
 
     // Create an identifier that can't be defined in the source language to avoid name conflicts
     public static String reservedId(String source) {

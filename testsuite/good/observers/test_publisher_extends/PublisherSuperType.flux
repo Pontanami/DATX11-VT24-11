@@ -1,3 +1,3 @@
-type PublisherSuperType publishes Event1, Event 2 {
+type PublisherSuperType publishes Event1, Event2 {
    
 }

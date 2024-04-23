@@ -28,7 +28,10 @@ import System.IO.Unsafe
 
 -- Executable name
 executable_name :: FilePath
-executable_name = "Transpiler.bat"
+executable_name = "../Transpiler.bat"
+
+transpiler_output :: FilePath
+transpiler_output = "transpiler_output"
 
 concatMapM :: Monad m => (a -> m [b]) -> [a] -> m [b]
 concatMapM f = fmap concat . mapM f
@@ -84,21 +87,17 @@ listTestFiles dir = sort <$> (filterM isTest =<< listTestsRecursive dir)
 listTestsRecursive :: FilePath -> IO [FilePath]
 listTestsRecursive dir = do
    doesDirectoryExist dir >>= \case
-      False            -> return []
-      True | stopSeach -> return []
-      _                -> do
+      False                   -> return []
+      True | isTestModule dir -> return []
+      _                       -> do
          fs <- map (dir </>) <$> listDirectory dir
          (fs ++) <$> concatMapM listTestsRecursive fs
-   where
-      stopSeach = isTestModuleOrTranspilerOutput dir
-
-isTestModuleOrTranspilerOutput :: FilePath -> Bool
-isTestModuleOrTranspilerOutput dir = "test_" `isPrefixOf` dirName || "_transpiled" `isSuffixOf` dirName
-   where dirName = takeFileName dir
 
 isTestModule :: FilePath -> Bool
-isTestModule dir = "test_" `isPrefixOf` dirName && not ("_transpiled" `isSuffixOf` dirName)
-   where dirName = takeFileName dir
+isTestModule dir = "test_" `isPrefixOf` (takeFileName dir)
+
+cleanUpOutput :: IO ()
+cleanUpOutput = doesDirectoryExist transpiler_output >>= flip when (removeDirectoryRecursive transpiler_output)
 
 welcome :: IO ()
 welcome = putStrLn $ "This is the test program for the transpiler"
@@ -163,7 +162,7 @@ type TestSuite = ([FilePath],[FilePath],[FilePath])
 
 runTests :: FilePath -> TestSuite -> IO ([(FilePath,Bool)],[(FilePath,Bool)],[(FilePath,Bool)])
 runTests dir (goodProgs, badProgs, badRuntimeProgs) = do
-  let prog = dir </> executable_name
+  let prog = executable_name
   checkFileExists prog
   good       <- mapM (\f -> (f,) <$> testGoodProgram       prog f) goodProgs
   bad        <- mapM (\f -> (f,) <$> testBadProgram        prog f) badProgs
@@ -238,19 +237,18 @@ getTestData f = do
    if isDir then do
       output <- getFilesWith ".output" f >>= readFirstIfExists
       args   <- getFilesWith ".flux" f
-      let destination = f ++ "_transpiled"
-      createDirectoryIfMissing False destination
+      let destination = transpiler_output </> f
+      createDirectoryIfMissing True destination
       return (output, "-r" : "-o" : destination : args)
    else do
       output <- readFileIfExists $ f ++ ".output"
-      let destination = takeWhile (/= '.') f ++ "_transpiled"
-      createDirectoryIfMissing False destination
+      let destination = transpiler_output </> takeWhile (/= '.') f
+      createDirectoryIfMissing True destination
       return (output, ["-r", "-o", destination, f])
    where
       readFirstIfExists (f:_) = readFileIfExists f
       readFirstIfExists _     = return ""
       getFilesWith ext dir    = map (dir </>) . filter ((== ext) . takeExtension) <$> listDirectory dir
-
 
 --
 -- * Main
@@ -330,6 +328,7 @@ usage = do
 mainOpts :: Options -> FilePath -> TestSuite -> IO ()
 mainOpts options dir testSuite = do
   welcome
+  cleanUpOutput
   when (makeFlag options) $ runMake (cabalFlag options) dir
   (good, bad, badRuntime) <- runTests dir testSuite
   putStrLn ""

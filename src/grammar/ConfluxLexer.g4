@@ -11,11 +11,13 @@ STRING : 'String' ;
 //Keywords
 TYPE : 'type' ;
 EXTENDS : 'extends' ;
+IMMUTABLE : 'immutable' ;
 COMPONENTS : 'components' ;
 FROM : 'from' ;
 VOID : 'void' ;
 ATTRIBUTES : 'attributes' ;
 CONSTRUCTORS : 'constructors' ;
+MAIN : 'main' ;
 METHODS : 'methods' ;
 RETURN : 'return' ;
 DEFAULT : 'default' ;
@@ -47,13 +49,22 @@ SWITCH     : 'switch';
 CASE       : 'case';
 BREAK      : 'break';
 
-NUMBER : DIGIT+ ;
-DECIMALNUMBER : DIGIT+ [.] DIGIT+ ;
+NUMBER : SIGN? DIGIT+ ;
+DECIMALNUMBER : SIGN? DIGIT+ [.] DIGIT+ ;
 
+fragment SIGN: [+-];
 fragment DIGIT : [0-9] ;
 fragment LETTER : [a-zA-Z] ;
 BooleanLiteral: 'true' | 'false';
-StringLiteral : '"' WORD* '"';
+StringLiteral: '"' StringCharacters? '"';
+
+fragment StringCharacters: StringCharacter+;
+
+fragment StringCharacter: ~["\\\r\n] | EscapeSequence;
+
+// §3.10.6 Escape Sequences for Character and String Literals
+
+fragment EscapeSequence: '\\' [btnfr"'\\];
 
 // Operators
 ASSIGN   : '=';
@@ -106,9 +117,15 @@ fragment IdentifierPart:
     | [\u0030-\u0039]
     | [\u007F-\u009F]
     | [\u00AD]
+    | [\u005F]
     | [\u0061-\u007A]
     ;
 
 WORD  : (LETTER | '_')+ ;
 NEWLINE : [\r\n]+ -> skip;
 WHITESPACE  : [ \t\r\n\u000C]+ -> skip;
+
+COMMENT: '/*' .*? '*/' -> channel(HIDDEN);
+
+LINE_COMMENT: '//' ~[\r\n]* -> channel(HIDDEN);
+

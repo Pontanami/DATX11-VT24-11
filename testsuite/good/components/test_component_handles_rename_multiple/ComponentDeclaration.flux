@@ -3,9 +3,9 @@ type ComponentDeclaration {
    void alias2();
 }
 components {
-   MyComponent c = MyComponent.new() handles componentMethod1() as alias1(), componentMethod2() as alias2();
+   MyComponent c = MyComponent.new() handles componentMethod1() as alias1, componentMethod2() as alias2;
 }
-main {
+main (String[] args) {
    ComponentDeclaration cd = ComponentDeclaration.new();
    cd.alias1();
    cd.alias2();

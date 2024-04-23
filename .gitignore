@@ -38,11 +38,18 @@ gen/
 *.o
 *.hi
 
-# auto-generated batch file for running transpiler
-src/Transpiler.bat
-
 # standard transpiler output directory
-transpiler-output/
+transpiler_output/
 
 # transpiler output directory for the testsuite
 *_transpiled/
+/src/outputTest/
+
+# generated javadocs
+/docs/
+
+# git uncommited changes
+.shelf
+
+# sentinel file for make
+/src/.makefile-java

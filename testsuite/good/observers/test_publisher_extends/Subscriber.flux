@@ -2,7 +2,6 @@ type Subscriber {
    void onEvent1(Event1 e);
    void onEvent2(Event2 e);
    void onEvent3(Event3 e);
-   int getCallbackSum();
 }
 methods {
    void onEvent1(Event1 e) {
