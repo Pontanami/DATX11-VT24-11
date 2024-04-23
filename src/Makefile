@@ -51,15 +51,15 @@ transpiler_jar_manifest := conflux-manifest.txt
 default : ${transpiler_jar}
 
 # Create the jar file
-${transpiler_jar} : .makefile-java-sentinel
+${transpiler_jar} : .makefile-java
 	@echo creating ${transpiler_jar}
 	@jar cfm ${transpiler_jar} ${transpiler_jar_manifest} ${transpiler_jar_contents}
 
-# Compile all java files necessary for Main
-.makefile-java-sentinel : ${antlr_gen} ${java_src}
+# Compile all java source files
+.makefile-java : ${antlr_gen} ${java_src}
 	@echo compiling java...
 	@javac -cp "${antlr_jar};../src" -d "${java_out_dir}" ${java_src} ${antlr_gen}
-	@copy /b .makefile-java-sentinel +,,
+	@TIME /T> .makefile-java
 
 # Generate the lexer and parser with antlr
 ${antlr_gen} : grammar/${parser}.g4 grammar/${lexer}.g4
