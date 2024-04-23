@@ -36,7 +36,6 @@ java_out := $(java_src:../src/%.java=$(java_out_dir)/%.class) $(antlr_gen:../src
 transpiler_jar := ../conflux.jar
 
 # classes to include in the jar
-# transpiler_jar_contents := $(java_src:../src/%.java=-C $(java_out_dir) %.class) $(antlr_gen:../src/%.java=-C $(java_out_dir) %.class)
 transpiler_jar_contents := -C $(java_out_dir) Main.class -C $(java_out_dir) Options.class -C $(java_out_dir) grammar/gen -C $(java_out_dir) java_builder \
 	-C $(java_out_dir) runtime -C $(java_out_dir) transpiler
 
@@ -52,15 +51,18 @@ transpiler_jar_manifest := conflux-manifest.txt
 default : ${transpiler_jar}
 
 # Create the jar file
-${transpiler_jar} : ${java_out}/Main.class
+${transpiler_jar} : .makefile-java-sentinel
+	@echo creating ${transpiler_jar}
 	@jar cfm ${transpiler_jar} ${transpiler_jar_manifest} ${transpiler_jar_contents}
-	@echo created ${transpiler_jar}
 
-# Compile the main class    ${java_src}
-${java_out}/Main.class : ${antlr_out}/${parser}.java ../src/Main.java
-	javac -cp "${antlr_jar};../src" -d "${java_out_dir}" Main.java
+# Compile all java files necessary for Main
+.makefile-java-sentinel : ${antlr_gen} ${java_src}
+	@echo compiling java...
+	@javac -cp "${antlr_jar};../src" -d "${java_out_dir}" ${java_src} ${antlr_gen}
+	@copy /b .makefile-java-sentinel +,,
 
 # Generate the lexer and parser with antlr
-${antlr_out}/${parser}.java : grammar/${parser}.g4 grammar/${lexer}.g4
-	java -jar ${antlr_jar} ${antlr_options} "grammar/${lexer}.g4"
-	java -jar ${antlr_jar} ${antlr_options} "grammar/${parser}.g4"
+${antlr_gen} : grammar/${parser}.g4 grammar/${lexer}.g4
+	@echo running antlr...
+	@java -jar ${antlr_jar} ${antlr_options} grammar/${lexer}.g4
+	@java -jar ${antlr_jar} ${antlr_options} grammar/${parser}.g4
