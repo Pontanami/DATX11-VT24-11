@@ -50,3 +50,6 @@ transpiler_output/
 
 # git uncommited changes
 .shelf
+
+# sentinel file for make
+/src/.makefile-java
