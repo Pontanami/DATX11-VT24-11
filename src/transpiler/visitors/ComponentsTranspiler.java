@@ -77,11 +77,11 @@ public class ComponentsTranspiler{
                 mb.addParameter(vc.type().getText(), vc.variableId().getText());
             }
 
-            if (delegateCtx.renameMethod() != null) {
-                mb.setIdentifier(delegateCtx.renameMethod().Identifier().getText());
-            }
         } else
             delegateSignature.append(")");
+        if (delegateCtx.renameMethod() != null) {
+            mb.setIdentifier(delegateCtx.renameMethod().Identifier().getText());
+        }
         mb.addStatement(delegateSignature.insert(0, ".").insert(0, identifier).append(";").toString());
         mbList.add(mb);
     }

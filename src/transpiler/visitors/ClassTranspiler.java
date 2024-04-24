@@ -169,16 +169,12 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
             }
             List<MethodBuilder> methods = state.lookupInterface(interfaceId).getMethods();
             List<MethodBuilder> typeMethods = genClass.getMethods();
-            methods.forEach(m ->{
-               typeMethods.forEach(t -> {
-                   if(m.signatureEquals(t) && t.getReturnType() == null){
-                       t.setReturnType(m.getReturnType());
-                       t.addModifier("public");
-                   }
-               });
-            });
-
-
+            methods.forEach(m -> typeMethods.forEach(t -> {
+                if(m.signatureEquals(t) && t.getReturnType() == null){
+                    t.setReturnType(m.getReturnType());
+                    t.addModifier("public");
+                }
+            }));
             state.addClass(genClass);
         }
     }
