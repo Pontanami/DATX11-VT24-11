@@ -28,9 +28,8 @@ public class AttributeTranspiler extends DefaultTranspiler {
 
     private void constructAttribute(ConfluxParser.AttributeDeclarationContext ctx, int i, StringBuilder result) {
         result.append("private ");
-        ConfluxParser.DeclarationContext dec = ctx.declaration();
 
-        if (dec.VAR() == null) {
+        if (ctx.declaration().VAR() == null) {
             result.append("final ");
         }
         result.append(visit(ctx.declaration().type()));
