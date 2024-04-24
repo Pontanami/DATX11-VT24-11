@@ -33,7 +33,7 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
     public Void visitTypeDeclaration(ConfluxParser.TypeDeclarationContext ctx) {
         interfaceId = ctx.Identifier().getText();
         genClass = new ClassBuilder();
-        taskQueue.addTask(TaskQueue.Priority.ADD_CLASS, new ClassTask(genClass));
+        taskQueue.addTask(TaskQueue.Priority.ADD_CLASS, new ClassTask(genClass, interfaceId));
         String typeId = ctx.Identifier().toString();
         genClass.addImplementedInterface(typeId);
         genClass.addModifier("public");
@@ -136,8 +136,9 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
         for (Pair<String, List<MethodBuilder>> component : ComponentsTranspiler.visitComponentsBlock(ctx)) {
             genClass.addField("private final " + component.a + ";");
             if(!component.b.isEmpty())
-                for (MethodBuilder mb : component.b)
+                for (MethodBuilder mb : component.b) {
                     genClass.addMethod(mb);
+                }
         }
 
         return visitChildren(ctx);
@@ -154,14 +155,30 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
     }
     private static class ClassTask implements TranspilerTask {
         private final ClassBuilder genClass;
+        private final String interfaceId;
 
-        private ClassTask(ClassBuilder genClass) { this.genClass = genClass; }
-
+        private ClassTask(ClassBuilder genClass, String id) { this.genClass = genClass; this.interfaceId = id; }
         @Override
         public void run(TranspilerState state) {
             if(state.doesJavaIdExist(genClass.getIdentifier().toString())){
                 throw new TranspilerException("Duplicate type id: " + genClass.getIdentifier());
             }
+
+            if(state.lookupInterface(interfaceId) == null) {
+                throw new TranspilerException("No interface found for class: " + genClass.getIdentifier());
+            }
+            List<MethodBuilder> methods = state.lookupInterface(interfaceId).getMethods();
+            List<MethodBuilder> typeMethods = genClass.getMethods();
+            methods.forEach(m ->{
+               typeMethods.forEach(t -> {
+                   if(m.signatureEquals(t) && t.getReturnType() == null){
+                       t.setReturnType(m.getReturnType());
+                       t.addModifier("public");
+                   }
+               });
+            });
+
+
             state.addClass(genClass);
         }
     }
