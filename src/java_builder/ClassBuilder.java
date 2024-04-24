@@ -8,7 +8,7 @@ import static java_builder.Code.fromString;
 
 /**
  * Builder for java classes. All the 'setter' methods in this class returns the instance for chaining. All methods in
- * this class throw an {@link IllegalArgumentException} for null parameters. The toCode method requires the identifier
+ * this class throw an {@link IllegalArgumentException} for null arguments. The toCode method requires the identifier
  * to be set before the call, otherwise an {@link IllegalStateException} will be thrown.
  */
 public class ClassBuilder implements Code {
@@ -16,6 +16,7 @@ public class ClassBuilder implements Code {
     private final List<Code> imports;
     private final List<Code> modifiers;
     private Code identifier;
+    private final List<Code> extendedClasses;
     private final List<Code> implementedInterfaces;
     private final List<Code> fields;
     private final List<MethodBuilder> constructors;
@@ -24,6 +25,7 @@ public class ClassBuilder implements Code {
     public ClassBuilder() {
         imports = new ArrayList<>();
         modifiers = new ArrayList<>();
+        extendedClasses = new ArrayList<>();
         implementedInterfaces = new ArrayList<>();
         constructors = new ArrayList<>();
         fields = new ArrayList<>();
@@ -56,8 +58,16 @@ public class ClassBuilder implements Code {
         return this;
     }
 
-    public ClassBuilder addImplementedInterface(String iface) {
-        return addImplementedInterface(fromString(throwOnNull(iface)));
+    public ClassBuilder addExtendedClass(String extendedClass) {
+        return addExtendedClass(fromString(throwOnNull(extendedClass)));
+    }
+    public ClassBuilder addExtendedClass(Code extendedClass) {
+        extendedClasses.add(throwOnNull(extendedClass));
+        return this;
+    }
+
+    public ClassBuilder addImplementedInterface(String implementedInterface) {
+        return addImplementedInterface(fromString(throwOnNull(implementedInterface)));
     }
     public ClassBuilder addImplementedInterface(Code implementedInterface) {
         implementedInterfaces.add(throwOnNull(implementedInterface));
@@ -98,6 +108,9 @@ public class ClassBuilder implements Code {
         }
         Code header = new CodeBuilder()
                 .beginDelimiter(" ").append(modifiers).append("class").append(identifier)
+                .beginConditional(!extendedClasses.isEmpty())
+                    .append("extends ").beginDelimiter(", ").append(extendedClasses).endDelimiter()
+                .endConditional().endDelimiter()
                 .beginConditional(!implementedInterfaces.isEmpty())
                     .append("implements ").beginDelimiter(", ").append(implementedInterfaces).endDelimiter()
                 .endConditional().endDelimiter().append(" {");

@@ -1,10 +1,17 @@
 package transpiler.visitors;
 
+import grammar.gen.ConfluxLexer;
 import grammar.gen.ConfluxParser;
 import java_builder.Code;
 import java_builder.CodeBuilder;
+import org.antlr.v4.runtime.*;
+import org.antlr.v4.runtime.misc.ParseCancellationException;
+import org.antlr.v4.runtime.tree.ParseTree;
+import org.antlr.v4.runtime.tree.TerminalNode;
+import transpiler.Environment;
 import transpiler.TranspilerException;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -37,5 +44,29 @@ public class ExpressionTranspiler extends DefaultTranspiler {
                     .toCode();
             default -> throw new TranspilerException("Invalid array constructor: " + constructorId);
         };
+    }
+
+    @Override
+    public String visitAddDecorator(ConfluxParser.AddDecoratorContext ctx) {
+        return "%s.%s(%s.%s(%s))".formatted(
+                visitDecoratedObject(ctx.decoratedObject()),
+                Environment.reservedId("addDecorator"),
+                visitDecoratorId(ctx.decoratorId()),
+                visitMethodId(ctx.methodId()),
+                ctx.parameterList() == null ? "" : visitParameterList(ctx.parameterList())
+        );
+    }
+
+    @Override
+    public String visitDecoratorId(ConfluxParser.DecoratorIdContext ctx) {
+        return Environment.classId(ctx.getText());
+    }
+
+    @Override
+    public String visitTerminal(TerminalNode node) {
+        if (node.getSymbol().getType() == ConfluxLexer.BASE) {
+            return Environment.reservedId("getBase") + "()";
+        }
+        return super.visitTerminal(node);
     }
 }

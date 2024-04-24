@@ -59,7 +59,7 @@ public class ObserverTranspiler extends ConfluxParserBaseVisitor<String> {
         return new CodeBuilder()
                 .append(publish).append("(")
                 .beginConditional(explicitEventType != null)
-                    .append("(").append(explicitEventType).append(") ")
+                .append("(").append(explicitEventType).append(") ")
                 .endConditional()
                 .append(event)
                 .append(");")
@@ -80,7 +80,7 @@ public class ObserverTranspiler extends ConfluxParserBaseVisitor<String> {
                 .append('"' + callback + '"')
                 .append(new CodeBuilder()
                         .beginConditional(explicitEventType != null)
-                            .append("(").append(subscriberCallbackType(explicitEventType)).append(") ")
+                        .append("(").append(subscriberCallbackType(explicitEventType)).append(") ")
                         .endConditional()
                         .append(subscriber).append("::").append(callback)
                 ).endDelimiter()
@@ -102,7 +102,7 @@ public class ObserverTranspiler extends ConfluxParserBaseVisitor<String> {
                 .append('"' + callback + '"')
                 .append(new CodeBuilder()
                         .beginConditional(explicitEventType != null)
-                            .append("(").append(subscriberCallbackType(explicitEventType)).append(") ")
+                        .append("(").append(subscriberCallbackType(explicitEventType)).append(") ")
                         .endConditional()
                         .append(subscriber).append("::").append(callback)
                 ).endDelimiter()
@@ -151,7 +151,8 @@ public class ObserverTranspiler extends ConfluxParserBaseVisitor<String> {
 
         private void addPublisherInterfaceMethods(String eventType, InterfaceBuilder publisherInterface) {
             publisherInterface.addMethod(new MethodBuilder(false, addSubscriberMethod(eventType)))
-                              .addMethod(new MethodBuilder(false, removeSubscriberMethod(eventType)));
+                              .addMethod(new MethodBuilder(false, removeSubscriberMethod(eventType)))
+                              .addMethod(new MethodBuilder(false, publishMethod(eventType)));
         }
 
         private void addSubscriberCallbackInterface(TranspilerState state, String eventType) {
@@ -207,7 +208,7 @@ public class ObserverTranspiler extends ConfluxParserBaseVisitor<String> {
         }
         private MethodBuilder publishMethod(String eventType) {
             return new MethodBuilder()
-                    .addModifier("private")
+                    .addModifier("public")
                     .setReturnType("void")
                     .setIdentifier(publish)
                     .addParameter(eventType, "event")
@@ -238,6 +239,7 @@ public class ObserverTranspiler extends ConfluxParserBaseVisitor<String> {
                             .append(".removeSubscriber(subscriber, callbackName);"));
         }
     }
+
     // Visitor for getting all the publishable event types from a type
     private static class EventTypesGetter extends ConfluxParserBaseVisitor<List<String>> {
         @Override

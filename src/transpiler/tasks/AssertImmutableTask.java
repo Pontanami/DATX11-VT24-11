@@ -25,8 +25,12 @@ public class AssertImmutableTask implements TranspilerTask {
     private class AssertImmutableVisitor extends ConfluxParserBaseVisitor<Void> {
         @Override
         public Void visitProgram(ConfluxParser.ProgramContext ctx) {
-            if (ctx.typeDeclaration() == null) return null; // this isn't a type, abort
-            return visitTypeDeclaration(ctx.typeDeclaration());
+            if (ctx.typeDeclaration() != null)
+                return visitTypeDeclaration(ctx.typeDeclaration());
+            else if (ctx.decoratorDeclaration() != null)
+                return visitDecoratorDeclaration(ctx.decoratorDeclaration());
+            else
+                throw new RuntimeException("Unhandled case, program is not a type or decorator");
         }
 
         @Override
@@ -42,6 +46,16 @@ public class AssertImmutableTask implements TranspilerTask {
                     } else
                         break;
                 }
+            }
+            return null;
+        }
+
+        @Override
+        public Void visitDecoratorDeclaration(ConfluxParser.DecoratorDeclarationContext ctx) {
+            String decoratedType = ctx.typeId().getText();
+            if (decoratedType.equals(immutableTypeId)) {
+                throw new TranspilerException("Illegal decorator for type " + decoratedType +
+                                              ": immutable types cannot be decorated");
             }
             return null;
         }

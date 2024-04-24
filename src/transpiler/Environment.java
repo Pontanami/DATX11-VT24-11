@@ -15,6 +15,10 @@ public class Environment {
         return "_Class" + source;
     }
 
+    public static String decoratorWrapperId(String source) {
+        return "_Decorated" + source;
+    }
+
     // name for generated identifiers that will not be referred to directly (e.g. when needed just for type checking)
     public static String unusedIdentifier() {
         return "__";

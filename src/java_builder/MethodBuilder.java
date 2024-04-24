@@ -55,7 +55,7 @@ public class MethodBuilder implements Code {
         this.identifier = source.identifier;
         this.modifiers = new ArrayList<>(source.modifiers);
         this.parameters = new ArrayList<>(source.parameters);
-        this.statements = new ArrayList<>(source.statements);
+        this.statements = generateBody ? new ArrayList<>(source.statements) : null;
         this.generateBody = generateBody;
     }
 

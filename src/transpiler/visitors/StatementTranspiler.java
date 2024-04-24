@@ -175,6 +175,8 @@ public class StatementTranspiler extends ConfluxParserBaseVisitor<Code> {
         String source;
         if (node.getSymbol().getType() == ConfluxLexer.Identifier)
             source = Environment.escapeJavaKeyword(node.toString());
+        else if (node.getSymbol().getType() == ConfluxLexer.BASE)
+            source = Environment.reservedId("getBase") + "()";
         else
             source = node.getText();
         return Code.fromString(source);

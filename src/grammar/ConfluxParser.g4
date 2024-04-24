@@ -39,9 +39,7 @@ typeExtend : EXTENDS Identifier ( COMMA Identifier)*;
 
 typePublishes : PUBLISHES type (COMMA type)* ;
 
-decoratorDeclaration: DECORATOR decoratorId DECORATES typeId LBRACE decoratorMethodDeclaration* RBRACE ;
-
-decoratorMethodDeclaration: Identifier methodBody ;
+decoratorDeclaration: DECORATOR decoratorId DECORATES typeId decoratorBody ;
 
 declaration: VAR? type declarationPart (COMMA declarationPart)* ;
 
@@ -95,6 +93,8 @@ block : LBRACE statement* RBRACE ;
 methodBody : LBRACE statement* RBRACE ;
 
 mainBlock : MAIN LPAREN type Identifier RPAREN LBRACE statement* RBRACE ;
+
+decoratorBody : constructorsBlock? attributesBlock? methodBlock ;
 
 //Statements -------------------------------------------------------------------------------------------------------
 statement : javaStatement
@@ -158,6 +158,7 @@ expression: LPAREN expression RPAREN
           | literals
           | qualifiedIdentifier
           | methodChain
+          | addDecorator
           | arrayConstructor
           | arrayAccess
           | qualifiedIdentifier (INC | DEC)
@@ -183,8 +184,12 @@ arrayConstructor : arrayType DOT Identifier LPAREN parameterList? RPAREN ;
 
 arrayAccess : qualifiedIdentifier (LBRACK expression RBRACK)+ ;
 
-qualifiedIdentifier : Identifier (DOT Identifier)*;
+qualifiedIdentifier : (BASE DOT)? Identifier (DOT Identifier)*;
 
 methodChain : methodCall (DOT methodCall)* ;
 
 methodCall : qualifiedIdentifier LPAREN parameterList? RPAREN;
+
+addDecorator : decoratedObject ADD DECORATOR decoratorId DOT methodId LPAREN parameterList? RPAREN ;
+
+decoratedObject : methodChain | arrayAccess | qualifiedIdentifier ;
