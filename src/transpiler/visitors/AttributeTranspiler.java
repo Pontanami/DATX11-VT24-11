@@ -2,33 +2,40 @@ package transpiler.visitors;
 
 import grammar.gen.ConfluxParser;
 import java_builder.MethodBuilder;
+import org.antlr.v4.runtime.tree.TerminalNode;
+
+import java.util.List;
 
 
 public class AttributeTranspiler extends DefaultTranspiler {
 
-
     @Override
     public String visitAttributeDeclaration(ConfluxParser.AttributeDeclarationContext ctx) {
 
-        if (ctx.AS() != null) {
-            return generateGetter(ctx);
-        } else {
-            return generateAttribute(ctx);
-        }
+        return generateAttribute(ctx);
     }
 
     private String generateAttribute(ConfluxParser.AttributeDeclarationContext ctx) {
         StringBuilder result = new StringBuilder();
 
-        result.append("private ");
+        constructAttribute(ctx, 0, result);
+        List<TerminalNode> iterations = ctx.declaration().COMMA();
+        for(int i = 1;i<=iterations.size(); i++){
+            constructAttribute(ctx, i, result);
+        }
+        return result.toString();
+    }
 
-        if (ctx.declaration().VAR() == null) {
+    private void constructAttribute(ConfluxParser.AttributeDeclarationContext ctx, int i, StringBuilder result) {
+        result.append("private ");
+        ConfluxParser.DeclarationContext dec = ctx.declaration();
+
+        if (dec.VAR() == null) {
             result.append("final ");
         }
         result.append(visit(ctx.declaration().type()));
-        result.append(" ").append(visitDeclarationPart(ctx.declaration().declarationPart(0)));
-        result.append(";");
-        return result.toString();
+        result.append(" ").append(visitDeclarationPart(ctx.declaration().declarationPart(i)));
+        result.append(";").append(" ");
     }
 
     private String generateGetter(ConfluxParser.AttributeDeclarationContext ctx) {

@@ -13,6 +13,7 @@ import transpiler.tasks.AssertImmutableTask;
 import transpiler.tasks.TaskQueue;
 import transpiler.tasks.TranspilerTask;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
@@ -38,8 +39,10 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
         genClass.setIdentifier(Environment.classId(typeId));
 
         //Immutable check
-        if(ctx.typeModifier().IMMUTABLE() != null) {
-            taskQueue.addTask(TaskQueue.Priority.CHECK_IMMUTABLE, new AssertImmutableTask(interfaceId));
+        if(ctx.typeModifier() != null) {
+            if(ctx.typeModifier().IMMUTABLE() != null) {
+                taskQueue.addTask(TaskQueue.Priority.CHECK_IMMUTABLE, new AssertImmutableTask(interfaceId));
+            }
         }
 
         return visitChildren(ctx);
@@ -70,15 +73,10 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
         if(ctx.attributeDeclaration() == null){
          return null;
         }
-        //Hela detta är temp, i väntan på attributeTranspiler
+
         List<ConfluxParser.AttributeDeclarationContext> attributedDeclarations = ctx.attributeDeclaration();
         for(ConfluxParser.AttributeDeclarationContext aD : attributedDeclarations){
-            ConfluxParser.DeclarationContext attribute = aD.declaration();
-            if (attribute.VAR() != null) {
-                AddVariableAttribute(attribute.declarationPart(0).Identifier().getText(), attribute.type().getText());
-            } else {
-                AddAttribute(attribute.declarationPart(0).Identifier().getText(), attribute.type().getText());
-            }
+             genClass.addField(aD.accept(new AttributeTranspiler()));
 
             if(aD.AS() == null) {
                 continue;
@@ -107,8 +105,6 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
             } else {
                 genClass.addMethod(mB);
             }
-
-
         }
 
 
@@ -140,15 +136,6 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
             genClass.addField("private final " + component.component.toCode() + ";");
         return visitChildren(ctx);
     }
-
-    private void AddAttribute(String Identifier, String type){
-        genClass.addField("private final " + type + " " + Identifier.toLowerCase() + ";");
-    }
-
-    private void AddVariableAttribute(String Identifier, String type){
-        genClass.addField("private " + type + " " + Identifier.toLowerCase() + ";");
-    }
-
     private Boolean checkMethodExist(String methodId){
         List<MethodBuilder> methods = genClass.getMethods();
         for(MethodBuilder method : methods){
@@ -166,7 +153,6 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
 
         @Override
         public void run(TranspilerState state) {
-            //Build class?
             if(state.doesJavaIdExist(genClass.getIdentifier().toString())){
                 throw new TranspilerException("Duplicate type id: " + genClass.getIdentifier());
             }
