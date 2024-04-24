@@ -5,6 +5,7 @@ import java_builder.MethodBuilder;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.util.List;
+import java.util.Objects;
 
 
 public class AttributeTranspiler extends DefaultTranspiler {
@@ -34,6 +35,7 @@ public class AttributeTranspiler extends DefaultTranspiler {
         }
         result.append(visit(ctx.declaration().type()));
         result.append(" ").append(visitDeclarationPart(ctx.declaration().declarationPart(i)));
+        if(Objects.equals(ctx.declaration().type().getText(), "float")){result.append("F");}
         result.append(";").append(" ");
     }
 
