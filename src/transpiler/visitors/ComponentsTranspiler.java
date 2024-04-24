@@ -1,106 +1,88 @@
 package transpiler.visitors;
 
 import grammar.gen.ConfluxParser;
-import java_builder.Code;
+import java_builder.CodeBuilder;
+import java_builder.MethodBuilder;
 import org.antlr.v4.runtime.misc.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.ListIterator;
 
 public class ComponentsTranspiler{
 
-    public static List<ComponentLine> visitComponentsBlock(ConfluxParser.ComponentsBlockContext ctx){
-        List<ComponentLine> componentList = new ArrayList<>();
+    public static List<Pair<String, List<MethodBuilder>>> visitComponentsBlock(ConfluxParser.ComponentsBlockContext ctx){
+        List<Pair<String, List<MethodBuilder>>> components = new ArrayList<>();
+        List<ConfluxParser.ComponentsDeclarationContext> componentContexts = ctx.componentsDeclaration();
 
-        List<ConfluxParser.ComponentsDeclarationContext> components = ctx.componentsDeclaration();
-        if(components != null) {
-            for(ConfluxParser.ComponentsDeclarationContext componentContext : components) {
-                ComponentLine line = new ComponentLine();
+        if(componentContexts != null) {
+            for(ConfluxParser.ComponentsDeclarationContext componentContext : componentContexts) {
+                List<MethodBuilder> mbList = new ArrayList<>();
+                CodeBuilder component = new CodeBuilder();
+
                 if(componentContext.aggregateDeclaration() != null) {
                     String type = componentContext.aggregateDeclaration().declarationNoAssign().type().getText();
                     String identifier = componentContext.aggregateDeclaration().declarationNoAssign().Identifier(0).getText();
-
-                    line.addComponent(Code.fromString(type + " " + identifier));
+                    component.append(type);
+                    component.append(" ");
+                    component.append(identifier);
 
                     // See if there is any "handles ... as ..." methods
-                    if(componentContext.aggregateDeclaration().handlesClause() != null){
+                    if(componentContext.aggregateDeclaration().handlesClause().HANDLES() != null){
                         for (ConfluxParser.DelegateMethodContext delegateCtx : componentContext.aggregateDeclaration().handlesClause().delegateMethod()) {
-                            Code delegateMethod = Code.fromString(delegateCtx.methodId().getText());
-                            Code asMethod = null;
-                            if (delegateCtx.renameMethod() != null)
-                            {
-                                asMethod = Code.fromString(delegateCtx.renameMethod().getText());
-                            }
-                            line.addHandles(delegateMethod, asMethod);
+                            handlesToMethods(mbList, identifier, delegateCtx);
                         }
-
-/*
-                        // See if there is an "as ..." method
-                        if(componentContext.aggregateDeclaration().handlesClause().Identifier() != null) {
-                            line.addNewMethodName(Code.fromString(componentContext.compositeDeclaration().handlesClause().Identifier().getText()));
-                        }*/
                     }
 
                 } else if (componentContext.compositeDeclaration() != null) {
                     String type = componentContext.compositeDeclaration().declaration().type().getText();
                     String identifier = componentContext.compositeDeclaration().declaration().declarationPart(0).Identifier().getText();
                     String constructorSignature = componentContext.compositeDeclaration().declaration().declarationPart(0).expression().accept(new ExpressionTranspiler());
-
-                    line.addComponent(Code.fromString(type + " " + identifier + " = " + constructorSignature.replaceAll(" ", ""))); //TODO: expression.accept ger String med mellanrum mellan tecknen
-
+                    component.append(type);
+                    component.append(" ");
+                    component.append(identifier);
+                    component.append(" = ");
+                    component.append(constructorSignature.replaceAll(" ", ""));
 
                     // See if there is any "handles ... as ..." methods
-                    if(componentContext.compositeDeclaration().handlesClause() != null){
+                    if(componentContext.compositeDeclaration().handlesClause().HANDLES() != null){
                         for (ConfluxParser.DelegateMethodContext delegateCtx : componentContext.compositeDeclaration().handlesClause().delegateMethod()) {
-                            Code delegateMethod = Code.fromString(delegateCtx.methodId().getText());
-                            Code asMethod = null;
-                            if (delegateCtx.renameMethod() != null)
-                            {
-                                asMethod = Code.fromString(delegateCtx.renameMethod().getText());
-                            }
-                            line.addHandles(delegateMethod, asMethod);
+                            handlesToMethods(mbList, identifier, delegateCtx);
                         }
-                        /*
-                        if(componentContext.compositeDeclaration().handlesClause().Identifier() != null) {
-                            line.addNewMethodName(Code.fromString(componentContext.compositeDeclaration().handlesClause().Identifier().getText()));
-                        }*/
                     }
                 }
-                componentList.add(line);
+                components.add(new Pair<>(component.toCode(), mbList));
             }
         }
-        return componentList;
-    }
-}
-
-
-class ComponentLine {
-    private Code component = null;
-    private List<Pair<Code, Code>> handlesPairs = null;
-
-    protected void addHandles(Code delegateMethod, Code asMethod) {
-        if(handlesPairs == null)
-            handlesPairs = new ArrayList<>();
-        handlesPairs.add(new Pair<>(delegateMethod,asMethod));
+        return components;
     }
 
-    protected void addComponent(Code c) {
-        component = c;
-    }
+    private static void handlesToMethods(List<MethodBuilder> mbList, String identifier, ConfluxParser.DelegateMethodContext delegateCtx) {
+        String delegateID = delegateCtx.methodId().getText();
+        StringBuilder delegateSignature = new StringBuilder(delegateID);
+        delegateSignature.append("(");
+        MethodBuilder mb = new MethodBuilder();
+        mb.setIdentifier(delegateID);
 
-    /**
-     * @return a list of Code-pairs (a, b) where 'a' is the signature of a delegated method and 'b' is the identifier of
-     * the new method name. List can be null if empty. 'b' can be null if there is no renaming for the 'a' method.
-     */
-    public List<Pair<Code, Code>> getHandlesPairs() {
-        return handlesPairs;
-    }
+        if(delegateCtx.variableList() != null) {
+            for (ListIterator<ConfluxParser.VariableContext> it = delegateCtx.variableList().variable().listIterator(); it.hasNext(); ) {
+                ConfluxParser.VariableContext vc = it.next();
+                delegateSignature.append(vc.variableId().getText());
 
-    /**
-     * @return the component identifier as Code.
-     */
-    public Code getComponent()
-    {
-        return component;
+                if (it.hasNext())
+                    delegateSignature.append(", ");
+                else
+                    delegateSignature.append(")");
+
+                mb.addParameter(vc.type().getText(), vc.variableId().getText());
+            }
+
+            if (delegateCtx.renameMethod() != null) {
+                mb.setIdentifier(delegateCtx.renameMethod().Identifier().getText());
+            }
+        } else
+            delegateSignature.append(")");
+        mb.addStatement(delegateSignature.insert(0, ".").insert(0, identifier).append(";").toString());
+        mbList.add(mb);
     }
 }
