@@ -9,6 +9,7 @@ import java_builder.MethodBuilder;
 import transpiler.Environment;
 import transpiler.TranspilerException;
 import transpiler.TranspilerState;
+import transpiler.tasks.AssertImmutableTask;
 import transpiler.tasks.TaskQueue;
 import transpiler.tasks.TranspilerTask;
 
@@ -35,6 +36,12 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
         genClass.addImplementedInterface(typeId);
         genClass.addModifier("public");
         genClass.setIdentifier(Environment.classId(typeId));
+
+        //Immutable check
+        if(ctx.typeModifier().IMMUTABLE() != null) {
+            taskQueue.addTask(TaskQueue.Priority.CHECK_IMMUTABLE, new AssertImmutableTask(interfaceId));
+        }
+
         return visitChildren(ctx);
     }
 
