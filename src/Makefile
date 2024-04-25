@@ -23,6 +23,12 @@ antlr_gen := \
 # location of the antlr jar file
 antlr_jar := ../antlr-4.13.1-complete.jar
 
+ifdef SystemRoot # Windows
+    CLASSPATH_SEPARATOR := ;
+else
+    CLASSPATH_SEPARATOR := :
+endif
+
 # java source files that make up the transpiler 	TODO: add ../src/transpiler/runtime/decorators/*.java
 java_src := $(filter-out %package-info.java, $(wildcard ../src/*.java ../src/java_builder/*.java ../src/runtime/observers/*.java \
 	../src/transpiler/*.java ../src/transpiler/tasks/*.java ../src/transpiler/visitors/*.java))
@@ -51,15 +57,15 @@ transpiler_jar_manifest := conflux-manifest.txt
 default : ${transpiler_jar}
 
 # Create the jar file
-${transpiler_jar} : .makefile-java
+${transpiler_jar} : .makefile-java-sentinel
 	@echo creating ${transpiler_jar}...
 	@jar cfm ${transpiler_jar} ${transpiler_jar_manifest} ${transpiler_jar_contents}
 
 # Compile all java source files
-.makefile-java : ${antlr_gen} ${java_src}
+.makefile-java-sentinel : ${antlr_gen} ${java_src}
 	@echo compiling java...
-	@javac -cp "${antlr_jar};../src" -d "${java_out_dir}" $?
-	@TIME /T> .makefile-java
+	@javac -cp "${antlr_jar}${CLASSPATH_SEPARATOR}../src" -d "${java_out_dir}" $?
+	@echo dummy-value > .makefile-java-sentinel
 
 # Generate the lexer and parser with antlr
 ${antlr_gen} : grammar/${parser}.g4 grammar/${lexer}.g4
