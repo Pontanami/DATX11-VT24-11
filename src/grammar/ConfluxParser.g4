@@ -94,7 +94,7 @@ methodBody : LBRACE statement* RBRACE ;
 
 mainBlock : MAIN LPAREN type Identifier RPAREN LBRACE statement* RBRACE ;
 
-decoratorBody : constructorsBlock? attributesBlock? methodBlock ;
+decoratorBody : constructorsBlock? attributesBlock? methodBlock? ;
 
 //Statements -------------------------------------------------------------------------------------------------------
 statement : javaStatement

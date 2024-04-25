@@ -54,8 +54,9 @@ public class AssertImmutableTask implements TranspilerTask {
         public Void visitDecoratorDeclaration(ConfluxParser.DecoratorDeclarationContext ctx) {
             String decoratedType = ctx.typeId().getText();
             if (decoratedType.equals(immutableTypeId)) {
-                throw new TranspilerException("Illegal decorator for type " + decoratedType +
-                                              ": immutable types cannot be decorated");
+                String decoratorType = ctx.decoratorId().getText();
+                throw new TranspilerException("Illegal decorator '" + decoratorType + "' for type '" + decoratedType +
+                                              "': immutable types cannot be decorated");
             }
             return null;
         }

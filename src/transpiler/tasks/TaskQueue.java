@@ -20,7 +20,8 @@ public class TaskQueue {
         CHECK_IMMUTABLE,
         MAKE_CONSTRUCTORS,
         MAKE_OBSERVERS,
-        MAKE_DECORATORS
+        MAKE_DECORATORS,
+        MAKE_DECORATOR_WRAPPER
     }
 
     private final TreeMap<Priority, List<TranspilerTask>> tasks = new TreeMap<>();

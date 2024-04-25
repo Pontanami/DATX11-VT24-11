@@ -107,12 +107,12 @@ public class ClassBuilder implements Code {
             throw new IllegalStateException("Cannot generate code: Missing class identifier");
         }
         Code header = new CodeBuilder()
-                .beginDelimiter(" ").append(modifiers).append("class").append(identifier)
+                .beginDelimiter(" ").append(modifiers).append("class").append(identifier).endDelimiter()
                 .beginConditional(!extendedClasses.isEmpty())
-                    .append("extends ").beginDelimiter(", ").append(extendedClasses).endDelimiter()
+                    .append(" extends ").beginDelimiter(", ").append(extendedClasses).endDelimiter()
                 .endConditional().endDelimiter()
                 .beginConditional(!implementedInterfaces.isEmpty())
-                    .append("implements ").beginDelimiter(", ").append(implementedInterfaces).endDelimiter()
+                    .append(" implements ").beginDelimiter(", ").append(implementedInterfaces).endDelimiter()
                 .endConditional().endDelimiter().append(" {");
 
         return new CodeBuilder()

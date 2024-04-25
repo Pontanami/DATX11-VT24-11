@@ -1,13 +1,10 @@
 package transpiler.visitors;
 
-//TODO: create decorator class
-
 import grammar.gen.ConfluxParser.*;
 import grammar.gen.ConfluxParserBaseVisitor;
 import grammar.gen.ConfluxParserVisitor;
 import java_builder.*;
 import java_builder.MethodBuilder.Parameter;
-import org.antlr.v4.runtime.ParserRuleContext;
 import transpiler.Environment;
 import transpiler.TranspilerException;
 import transpiler.TranspilerState;
@@ -23,6 +20,7 @@ import static transpiler.tasks.TaskQueue.Priority;
 
 public class DecoratorTranspiler extends ConfluxParserBaseVisitor<Void> {
     private static final String DECORATOR_TYPE_ID = Environment.reservedId("Decorator");
+    private static final String ABSTRACT_DECORATOR_TYPE_ID = Environment.reservedId("AbstractDecorator");
     private static final String DECORATOR_TAG_TYPE_ID = "DecoratorTag";
     private static final String ADD_DECORATOR_METHOD_ID = Environment.reservedId("addDecorator");
     private static final String GET_INSTANCE_METHOD_ID = Environment.reservedId("getDecoratedInstance");
@@ -32,12 +30,14 @@ public class DecoratorTranspiler extends ConfluxParserBaseVisitor<Void> {
     private static final String HANDLER_GET_DECORATED = "getTopLevelDecorator";
 
     private final TaskQueue taskQueue;
-    private final ConfluxParserVisitor<Void> conTranspiler;
+    private final ConfluxParserVisitor<Code> stmTranspiler;
+
+    private String decoratorId;
     private ClassBuilder decoratorClass;
 
-    public DecoratorTranspiler(TaskQueue taskQueue, ConfluxParserVisitor<Void> conTranspiler) {
+    public DecoratorTranspiler(TaskQueue taskQueue, ConfluxParserVisitor<Code> stmTranspiler) {
         this.taskQueue = taskQueue;
-        this.conTranspiler = conTranspiler;
+        this.stmTranspiler = stmTranspiler;
     }
 
     @Override
@@ -53,7 +53,8 @@ public class DecoratorTranspiler extends ConfluxParserBaseVisitor<Void> {
     public Void visitTypeDeclaration(TypeDeclarationContext ctx) {
         if (canTypeBeDecorated(ctx)) {
             // add wrapper classes for types that can be decorated
-            taskQueue.addTask(Priority.MAKE_DECORATORS, new CreateDecoratorWrapperTask(ctx.Identifier().getText()));
+            String wrappedType = ctx.Identifier().getText();
+            taskQueue.addTask(Priority.MAKE_DECORATOR_WRAPPER, new CreateDecoratorWrapperTask(wrappedType));
         }
         return null;
     }
@@ -61,20 +62,59 @@ public class DecoratorTranspiler extends ConfluxParserBaseVisitor<Void> {
     @Override
     public Void visitDecoratorDeclaration(DecoratorDeclarationContext ctx) {
         decoratorClass = new ClassBuilder();
-        String decoratorId = ctx.decoratorId().getText();
+        decoratorId = ctx.decoratorId().getText();
         decoratorClass.setIdentifier(Environment.classId(decoratorId));
 
-        conTranspiler.visitDecoratorDeclaration(ctx);
+        //TODO: add constructors to decorators using ConstructorTranspiler
         visitDecoratorBody(ctx.decoratorBody());
 
+        //Add decorator class to transpiler state
         taskQueue.addTask(Priority.ADD_CLASS, new AddClassTask(decoratorClass));
+        //Add decorator-specific fields and methods to decorator class
+        taskQueue.addTask(Priority.MAKE_DECORATORS, new CreateDecoratorTask(ctx.typeId().getText(), decoratorId));
         return null;
     }
 
     @Override
     public Void visitDecoratorBody(DecoratorBodyContext ctx) {
-        //TODO: add methods to class builder
-        //TODO: add attributes to class builder
+        if (ctx.attributesBlock() != null) {
+            visitAttributesBlock(ctx.attributesBlock());
+        }
+
+        if (ctx.methodBlock() != null) {
+            visitMethodBlock(ctx.methodBlock());
+        }
+        return null;
+    }
+
+    @Override
+    public Void visitAttributesBlock(AttributesBlockContext ctx) {
+        ctx.attributeDeclaration().forEach(this::visitAttributeDeclaration);
+        return null;
+    }
+
+    @Override
+    public Void visitAttributeDeclaration(AttributeDeclarationContext ctx) {
+        if (ctx.AS() != null) { //TODO: maybe allow auto-generated getters for decorator?
+            throw new TranspilerException("Illegal getter generation for decorator '" + decoratorId + "'");
+        }
+        String field = stmTranspiler.visitDeclaration(ctx.declaration()).toCode();
+        decoratorClass.addField("private " + field + ";");
+        return null;
+    }
+
+    @Override
+    public Void visitMethodBlock(MethodBlockContext ctx) {
+        ctx.methodDeclaration().forEach(this::visitMethodDeclaration);
+        return null;
+    }
+
+    @Override
+    public Void visitMethodDeclaration(MethodDeclarationContext ctx) {
+        MethodBuilder method = new MethodBuilder().addModifier("public"); //TODO: maybe make public only if it's from the interface
+        MethodTranspiler methodTranspiler = new MethodTranspiler(method, stmTranspiler);
+        methodTranspiler.visitMethodDeclaration(ctx);
+        decoratorClass.addMethod(method);
         return null;
     }
 
@@ -101,7 +141,7 @@ public class DecoratorTranspiler extends ConfluxParserBaseVisitor<Void> {
                                               "' in decorator declaration '" + declaredDecoratorId + "'");
             }
 
-            String superClass = Environment.reservedId("AbstractDecorator") + "<" + baseInterfaceId + ">";
+            String superClass = ABSTRACT_DECORATOR_TYPE_ID + "<" + baseInterfaceId + ">";
             decoratorClass.addModifier("public");
             decoratorClass.addExtendedClass(superClass);
             decoratorClass.addImplementedInterface(baseInterfaceId);
@@ -149,9 +189,15 @@ public class DecoratorTranspiler extends ConfluxParserBaseVisitor<Void> {
                     .addField(makeHandlerField())
                     .addConstructor(makeConstructor())
                     .addMethod(makeAddDecoratorMethod(false));
-            wrappedInterface.getMethods().forEach(method ->
-                    wrapperClass.addMethod(makeDelegateMethod(method, getDelegate))
-            );
+
+            wrappedInterface.getMethods().forEach(method -> {
+                boolean isAddDecoratorMethod = method.getIdentifier().toCode().equals(ADD_DECORATOR_METHOD_ID);
+                boolean isStatic = method.getModifiers().stream().anyMatch(c -> c.toCode().equals("static"));
+                if (!isStatic && !isAddDecoratorMethod) {
+                    wrapperClass.addMethod(makeDelegateMethod(method, getDelegate));
+                }
+            });
+            state.addClass(wrapperClass);
         }
 
         private Code makeHandlerField() {
@@ -243,19 +289,6 @@ public class DecoratorTranspiler extends ConfluxParserBaseVisitor<Void> {
         @Override
         public void run(TranspilerState state) {
             state.addClass(toAdd);
-        }
-    }
-
-    // en lösning på att vi har en massa olika visitors som implicit antar att man börjar visita från en viss nod
-
-    static abstract class PartialVisitor<T, C extends ParserRuleContext> extends ConfluxParserBaseVisitor<T> {
-        public abstract T visitStartNode(C ctx);
-    }
-
-    static class SomeVisitor extends PartialVisitor<Void, ExpressionContext> {
-        @Override
-        public Void visitStartNode(ExpressionContext ctx) {
-            return visitExpression(ctx);
         }
     }
 }
