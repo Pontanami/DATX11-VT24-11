@@ -23,7 +23,7 @@ antlr_gen := \
 # location of the antlr jar file
 antlr_jar := ../antlr-4.13.1-complete.jar
 
-ifdef SystemRoot # Windows
+ifeq ($(OS),Windows_NT)
     CLASSPATH_SEPARATOR := ;
 else
     CLASSPATH_SEPARATOR := :
