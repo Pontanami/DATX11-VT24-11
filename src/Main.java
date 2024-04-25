@@ -14,16 +14,13 @@ import transpiler.TranspilerOutput;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class Main {
-    private static final String CONFLUX_JAR = getConfluxJar();
-            //Path.of(System.getProperty("user.dir"),"conflux.jar").toString();
-
     public static void main(String[] args) {
         try {
             Options options = new Options(args);
@@ -100,7 +97,7 @@ public class Main {
         List<String> compileJavaCmd = new ArrayList<>();
         compileJavaCmd.add(compiler);
         compileJavaCmd.add("-cp"); // include the runtime classes
-        compileJavaCmd.add('"' + CONFLUX_JAR + '"');
+        compileJavaCmd.add('"' + getConfluxJar() + '"');
 
         compileJavaCmd.add("-d"); // set the output directory
         compileJavaCmd.add(Path.of(outDir).toString());
@@ -117,7 +114,7 @@ public class Main {
         List<String> runCmd = List.of(
                 javaInterpreter,
                 "-cp",
-                '"' + CONFLUX_JAR + sep + outDir + '"',
+                '"' + getConfluxJar() + sep + outDir + '"',
                 '"' + pkgId + '.' + mainId + '"'
         );
         runCommandWait(runCmd);
@@ -130,11 +127,13 @@ public class Main {
     }
 
     private static String getConfluxJar() {
-        String cj = Path.of(System.getProperty("user.dir"),"conflux.jar").toString();
-        if (new File(cj).isFile()) {
-            return cj;
-        } else {
-            return "../conflux.jar";//TODO: find a way to find the jar file in other places
+        try {
+            return new File(Main.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getPath();
+        } catch (URISyntaxException e) {
+            System.err.println("Couldn't find Conflux jar file, caused by:");
+            e.printStackTrace(System.err);
+            System.exit(1);
+            throw new AssertionError("Unreachable code");
         }
     }
 }

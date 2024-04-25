@@ -5,6 +5,9 @@
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
 
+-- Test runner originally taken from the chalmers course DAT151/DIT231 Programming Language Technology
+-- and adapted for testing the Conflux transpiler.
+--
 -- GHC needs -threaded
 
 import Control.Applicative
@@ -200,7 +203,7 @@ testBadProgram prog f = do
   debug $ "Exit code: " ++ show s
   -- A. Abel, 2020-11-18 more lenient checking for error report.
   -- Can be in either stdout or stderr, and need not be the first thing that is printed.
-  if "TRANSPILER ERROR" `isInfixOf` (out ++ err) || "PARSER ERROR" `isInfixOf` (out ++ err) then
+  if any (`isInfixOf` (out ++ err)) ["TRANSPILER ERROR", "PARSER ERROR", "error"] then
     return True
   else do
     let msg = case s of
