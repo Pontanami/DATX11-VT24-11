@@ -13,8 +13,6 @@ import transpiler.TranspilerState;
 import transpiler.tasks.AssertImmutableTask;
 import transpiler.tasks.TaskQueue;
 import transpiler.tasks.TranspilerTask;
-
-import java.util.ArrayList;
 import java.util.List;
 
 public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
@@ -152,13 +150,17 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
         private ClassTask(ClassBuilder genClass, String id) { this.genClass = genClass; this.interfaceId = id; }
         @Override
         public void run(TranspilerState state) {
-            if(state.doesJavaIdExist(genClass.getIdentifier().toString())){
+
+            if(state.doesJavaIdExist(genClass.getIdentifier().toCode())){
                 throw new TranspilerException("Duplicate type id: " + genClass.getIdentifier());
             }
 
             if(state.lookupInterface(interfaceId) == null) {
                 throw new TranspilerException("No interface found for type: " + interfaceId);
             }
+
+            //Cross-checking the methods in the interface with the methods in the class to add in the correct return
+            // type for the component method
             List<MethodBuilder> methods = state.lookupInterface(interfaceId).getMethods();
             List<MethodBuilder> typeMethods = genClass.getMethods();
             methods.forEach(m -> typeMethods.forEach(t -> {
