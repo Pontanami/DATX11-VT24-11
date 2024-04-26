@@ -5,11 +5,7 @@ import java.util.*;
 // Container for command line options for the transpiler, the constructor parses the args.
 final class Options {
     private static final String COMPILE_FLAG = "compile";
-    private static final String DEFAULT_COMPILER = "javac";
-
     private static final String RUN_FLAG = "run";
-    private static final String DEFAULT_INTERPRETER = "java";
-
     private static final String OUTPUT_FLAG = "output";
     private static final String INPUT_EXTENSION = "flux";
     private static final String USAGE = """
@@ -28,8 +24,8 @@ final class Options {
         List<String> argList = new ArrayList<>(List.of(args));
         List<String> sourceFiles = new ArrayList<>();
 
-        String javaCompiler = parseFlag(COMPILE_FLAG, DEFAULT_COMPILER, argList);
-        String javaInterpreter = parseFlag(RUN_FLAG, DEFAULT_INTERPRETER, argList);
+        String javaCompiler = parseFlag(COMPILE_FLAG, "javac", argList);
+        String javaInterpreter = parseFlag(RUN_FLAG, "java", argList);
         String outputDir = parseFlag(OUTPUT_FLAG, null, argList);
 
 
@@ -38,15 +34,28 @@ final class Options {
             reportAndExit("No input files");
         }
         if (javaCompiler == null && javaInterpreter != null) {
-            javaCompiler = DEFAULT_COMPILER; // must compile if we're running, so set to default
+            javaCompiler = "javac"; // must compile if we're running
         }
         if (outputDir == null) {
             outputDir = getDefaultOutputDir();
         }
-        this.javaCompiler = javaCompiler;
-        this.javaInterpreter = javaInterpreter;
+        this.javaCompiler = javaCompiler == null ? null : getJavaBinary(javaCompiler);
+        this.javaInterpreter = javaInterpreter == null ? null : getJavaBinary(javaInterpreter);
         this.outputDir = outputDir;
         this.sourceFiles = List.copyOf(sourceFiles);
+    }
+
+    // Try to get the complete path to a java binary, if it fails, the argument is returned unchanged
+    private String getJavaBinary(String name) {
+        try {
+            String javaHome = System.getProperty("java.home");
+            if (javaHome == null) {
+                return name;
+            }
+            return Path.of(javaHome, "bin", name).toString();
+        } catch (SecurityException e) {
+           return name;
+        }
     }
 
     // Parse a flag and its argument. If the flag isn't present return null. If flag is present, remove the flag
@@ -64,18 +73,16 @@ final class Options {
                     reportAndExit("Duplicate flag " + flag);
                 }
                 it.remove();
-                String value = defaultValue;
-                if (it.hasNext()) {
-                    arg = it.next(); //TODO: this is not a stable solution
-                    if (!isInputFileValid(arg) && arg.charAt(0) != '-') {//the next arg is not a source file or a flag
-                        value = arg;
+                flagValue = defaultValue;
+                if (defaultValue == null && it.hasNext()) {
+                    arg = it.next();
+                    if (arg.charAt(0) != '-') {
+                        flagValue = arg;
                         it.remove();
                     }
                 }
-                if (value == null) {
+                if (flagValue == null) {
                     reportAndExit("Missing argument to flag " + flag);
-                } else {
-                    flagValue = value;
                 }
             }
         }
