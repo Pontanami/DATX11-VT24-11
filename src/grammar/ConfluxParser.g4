@@ -14,6 +14,9 @@ literals
 numericType
     : INT
     | FLOAT
+    | SHORT
+    | LONG
+    | DOUBLE
     ;
 
 primitiveType
@@ -111,6 +114,7 @@ javaStatement : expression SEMI
               | returnStatement
               | block
               | BREAK SEMI
+              | CONTINUE SEMI
               ;
 
 observerStatement : publishStatement
@@ -162,6 +166,9 @@ expression: LPAREN expression RPAREN
           | arrayAccess
           | qualifiedIdentifier (INC | DEC)
           | (INC | DEC) qualifiedIdentifier
+          | THIS DOT BASE
+          | THIS
+          | BASE
           | BANG expression
           | <assoc=right> expression CARET expression
           | expression MUL expression
@@ -183,7 +190,7 @@ arrayConstructor : arrayType DOT Identifier LPAREN parameterList? RPAREN ;
 
 arrayAccess : qualifiedIdentifier (LBRACK expression RBRACK)+ ;
 
-qualifiedIdentifier : Identifier (DOT Identifier)*;
+qualifiedIdentifier : (THIS DOT)? (BASE DOT)? Identifier (DOT Identifier)*;
 
 methodChain : methodCall (DOT methodCall)* ;
 

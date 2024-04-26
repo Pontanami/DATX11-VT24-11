@@ -26,7 +26,7 @@ public class Environment {
         return UNUSED_JAVA_KEYWORDS.contains(source) ? reservedId(source) : source;
     }
 
-    // TODO: decide if this includes: assert, continue, throw, throws, try, catch, finally, short, long, byte, null
+    // TODO: decide if this includes: assert, throw, throws, try, catch, finally, null
     public static final Set<String> UNUSED_JAVA_KEYWORDS = Set.of(
             "abstract", "new", "default", "package", "synchronized", "do", "goto", "implements", "protected",
             "public", "private", "enum", "instanceof", "transient", "interface", "static", "class", "strictfp",
