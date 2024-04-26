@@ -59,7 +59,7 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
             MethodBuilder mB = new MethodBuilder(true).addModifier("public");
             MethodTranspiler mT = new MethodTranspiler(mB, sT);
             method.accept(mT);
-            if(checkMethodExist(mT.mb.getIdentifier().toCode())){
+            if(checkMethodExist(mT.mb)){
                 throw new TranspilerException("Duplicate method id: " + mT.mb.getIdentifier());
             }
             else{
@@ -88,7 +88,7 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
             }
             //Generate getter method
             MethodBuilder mB = generateGetter(aD);
-            if (checkMethodExist(mB.getIdentifier().toCode())) {
+            if (checkMethodExist(mB)) {
                 throw new TranspilerException("Duplicate method id: " + mB.getIdentifier());
             } else {
                 genClass.addMethod(mB);
@@ -133,10 +133,10 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
 
         return visitChildren(ctx);
     }
-    private Boolean checkMethodExist(String methodId){
+    private Boolean checkMethodExist(MethodBuilder methodBuilder){
         List<MethodBuilder> methods = genClass.getMethods();
         for(MethodBuilder method : methods){
-            if(method.getIdentifier().toString().equals(methodId)){
+            if(method.signatureEquals(methodBuilder)){
                 return true;
             }
         }
