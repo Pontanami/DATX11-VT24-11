@@ -49,9 +49,10 @@ SWITCH     : 'switch';
 CASE       : 'case';
 BREAK      : 'break';
 
-NUMBER : DIGIT+ ;
-DECIMALNUMBER : DIGIT+ [.] DIGIT+ ;
+NUMBER : SIGN? DIGIT+ ;
+DECIMALNUMBER : SIGN? DIGIT+ [.] DIGIT+ ;
 
+fragment SIGN: [+-];
 fragment DIGIT : [0-9] ;
 fragment LETTER : [a-zA-Z] ;
 BooleanLiteral: 'true' | 'false';
@@ -116,6 +117,7 @@ fragment IdentifierPart:
     | [\u0030-\u0039]
     | [\u007F-\u009F]
     | [\u00AD]
+    | [\u005F]
     | [\u0061-\u007A]
     ;
 

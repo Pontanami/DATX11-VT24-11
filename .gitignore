@@ -47,3 +47,6 @@ transpiler_output/
 
 # generated javadocs
 /docs/
+
+# git uncommited changes
+.shelf

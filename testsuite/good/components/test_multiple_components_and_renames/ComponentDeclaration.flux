@@ -1,19 +1,19 @@
 type ComponentDeclaration {
    void componentMethod1a();
    void componentMethod1b();
-   void renamedMethod1();
-   void renamedMethod2();
+   void renamedMethod2a();
+   void renamedMethod2b();
 }
 components {
    MyComponent c1 = MyComponent1.new() handles componentMethod1a(), componentMethod1b();
    MyComponent c2 = MyComponent2.new() handles
-      componentMethod2a() as renamedMethod1,
-      componentMethod2b() as renamedMethod2
+      componentMethod2a() as renamedMethod2a,
+      componentMethod2b() as renamedMethod2b;
 }
-main (String[] args){
+main (String[] args) {
    ComponentDeclaration cd = ComponentDeclaration.new();
-   cd.componentMethod1();
-   cd.componentMethod2();
-   cd.renamedMethod1();
-   cd.renamedMethod2();
+   cd.componentMethod1a();
+   cd.componentMethod1b();
+   cd.renamedMethod2a();
+   cd.renamedMethod2b();
 }

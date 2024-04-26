@@ -1,1 +1,4 @@
 type TrafficEvent {}
+constructors {
+   new() {}
+}

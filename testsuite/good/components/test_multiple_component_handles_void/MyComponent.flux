@@ -2,7 +2,7 @@ type MyComponent {
    void componentMethod();
 }
 constructors {
-   Comp(int theId) { id = theId; }
+   new(theId) { id = theId; }
 }
 attributes {
    int id;

@@ -1,9 +1,6 @@
 type SingletonConstructors {
    int getId();
 }
-attributes {
-   int id;
-}
 singleton constructors {
    instance1() {
       this.id = 1;
@@ -11,6 +8,9 @@ singleton constructors {
    instance2() {
       this.id = 2;
    }
+}
+attributes {
+   int id;
 }
 methods {
    int getId() { return id; }

@@ -55,7 +55,7 @@ public class ConstructorTranspiler extends ConfluxParserBaseVisitor<Void> {
     }
 
     private MethodBuilder makeDefaultConstructor(List<Parameter> components) {
-        MethodBuilder method = new MethodBuilder().setIdentifier(Environment.escapeJavaKeyword("new"));
+        MethodBuilder method = new MethodBuilder().setIdentifier("new");
         components.forEach(method::addParameter);
         components.forEach(p -> method.addStatement(new CodeBuilder()
                 .append("this.")
@@ -125,7 +125,7 @@ public class ConstructorTranspiler extends ConfluxParserBaseVisitor<Void> {
 
             this.typeId = typeId;
             this.classId = classId;
-            this.factoryId = constructor.getIdentifier().toCode();
+            this.factoryId = Environment.escapeJavaKeyword(constructor.getIdentifier().toCode());
             this.constructorEnumType = Environment.reservedId(
                     "ConstructorId" +
                     Character.toUpperCase(factoryId.charAt(0)) +
