@@ -38,12 +38,13 @@ gen/
 *.o
 *.hi
 
-# standard transpiler output directory
+# transpiler output directories
 transpiler_output/
+/src/outputTest/
+/src/default_package/
 
 # transpiler output directory for the testsuite
 *_transpiled/
-/src/outputTest/
 
 # generated javadocs
 /docs/
@@ -52,4 +53,4 @@ transpiler_output/
 .shelf
 
 # sentinel file for make
-/src/.makefile-java
+src/.makefile-java-sentinel
