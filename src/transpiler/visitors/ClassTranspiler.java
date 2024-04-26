@@ -78,7 +78,7 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
         List<ConfluxParser.AttributeDeclarationContext> attributedDeclarations = ctx.attributeDeclaration();
         for(ConfluxParser.AttributeDeclarationContext aD : attributedDeclarations){
             String field = aD.accept(new AttributeTranspiler());
-            if(isImmutable && field.contains("final")) {
+            if(isImmutable && !field.contains("final")) {
                throw new TranspilerException("Immutable type " + interfaceId +  " cannot have mutable fields");
             }
              genClass.addField(field);
