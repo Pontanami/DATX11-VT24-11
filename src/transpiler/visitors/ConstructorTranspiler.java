@@ -101,9 +101,9 @@ public class ConstructorTranspiler extends ConfluxParserBaseVisitor<Void> {
         components.forEach(method::addParameter);
         components.forEach(p -> method.addStatement(new CodeBuilder()
                 .append("this.")
-                .append(p.getArgId())
+                .append(p.argId())
                 .append(" = ")
-                .append(p.getArgId())
+                .append(p.argId())
                 .append(";")
         ));
         return method;
@@ -173,11 +173,13 @@ public class ConstructorTranspiler extends ConfluxParserBaseVisitor<Void> {
                     "ConstructorId" +
                     Character.toUpperCase(factoryId.charAt(0)) +
                     factoryId.substring(1));
-            this.constructorArgs = params.stream().map(Parameter::getArgId).map(Code::fromString).toList();
+            this.constructorArgs = params.stream().map(Parameter::argId).map(Code::fromString).toList();
             this.isSingleton = isSingle;
             this.singletonId = Environment.reservedId(factoryId + "Singleton");
             this.canBeDecorated = decorated;
             this.constructor = method;
+            assert !canBeDecorated || typeId != null
+                    : "Cannot create constructor for class with decorator wrapper without an interface id";
         }
 
         @Override
@@ -204,7 +206,7 @@ public class ConstructorTranspiler extends ConfluxParserBaseVisitor<Void> {
         }
 
         private Code makeSingletonVar() {
-            return new CodeBuilder().append("private static ").append(classId)
+            return new CodeBuilder().append("private static ").append(typeId == null ? classId : typeId)
                     .append(" ").append(singletonId).append(";");
         }
 
@@ -216,19 +218,25 @@ public class ConstructorTranspiler extends ConfluxParserBaseVisitor<Void> {
         private MethodBuilder makeClassFactoryMethod() {
             MethodBuilder factory = new MethodBuilder();
             constructor.getParameters().forEach(factory::addParameter);
+            String wrapper = Environment.decoratorWrapperId(typeId);
             CodeBuilder returnStm;
             if (isSingleton) {
                 returnStm = new CodeBuilder()
                         .append("return ").append(singletonId).append(" == null ? ")
-                        .append(singletonId).append(" = new ").append(classId)
-                        .append("(").append(constructorEnumType).append(".__) : ")
-                        .append(singletonId).append(";");
+                        .append(singletonId).append(" = ")
+                        .beginConditional(canBeDecorated).append("new ").append(wrapper).append("(").endConditional()
+                        .append("new ").append(classId).append("(").append(constructorEnumType).append(".__)")
+                        .beginConditional(canBeDecorated).append(")").endConditional()
+                        .append(" : ").append(singletonId).append(";");
             } else {
                 returnStm = new CodeBuilder()
-                        .append("return new ").append(classId).append("(")
+                        .append("return ")
+                        .beginConditional(canBeDecorated).append("new ").append(wrapper).append("(").endConditional()
+                        .append("new ").append(classId).append("(")
                         .beginDelimiter(", ").append(constructorEnumType + ".__")
-                        .append(constructorArgs).endDelimiter()
-                        .append(");");
+                        .append(constructorArgs).endDelimiter().append(")")
+                        .beginConditional(canBeDecorated).append(")").endConditional()
+                        .append(";");
             }
             String retType = typeId == null ? classId : typeId;
             return factory.addModifier("static").setReturnType(retType).setIdentifier(factoryId).addStatement(returnStm);
@@ -236,15 +244,12 @@ public class ConstructorTranspiler extends ConfluxParserBaseVisitor<Void> {
 
         private MethodBuilder makeInterfaceFactoryMethod() {
             MethodBuilder factory = new MethodBuilder();
-            String wrapper = Environment.decoratorWrapperId(typeId);
             constructor.getParameters().forEach(factory::addParameter);
 
             CodeBuilder stm = new CodeBuilder()
                     .append("return ")
-                    .beginConditional(canBeDecorated).append("new ").append(wrapper).append("(").endConditional()
                     .append(classId).append(".").append(factoryId).append("(")
                     .beginDelimiter(", ").append(constructorArgs).endDelimiter()
-                    .beginConditional(canBeDecorated).append(")").endConditional()
                     .append(");");
             return factory.addModifier("static").setReturnType(typeId).setIdentifier(factoryId).addStatement(stm);
         }

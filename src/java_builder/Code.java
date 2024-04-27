@@ -2,7 +2,7 @@ package java_builder;
 
 /**
  * Abstract representation of java code. This is the common interface for the builder classes in this package, where
- * the method toCode is the 'build' method.
+ * the method {@code toCode} is the 'build' method.
  */
 public interface Code {
 

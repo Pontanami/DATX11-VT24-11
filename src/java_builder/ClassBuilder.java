@@ -1,8 +1,6 @@
 package java_builder;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 import static java_builder.Code.fromString;
 
@@ -13,7 +11,7 @@ import static java_builder.Code.fromString;
  */
 public class ClassBuilder implements Code {
     private Code packageName;
-    private final List<Code> imports;
+    private final Set<String> imports;
     private final List<Code> modifiers;
     private Code identifier;
     private final List<Code> extendedClasses;
@@ -23,7 +21,7 @@ public class ClassBuilder implements Code {
     private final List<MethodBuilder> methods;
 
     public ClassBuilder() {
-        imports = new ArrayList<>();
+        imports = new TreeSet<>();
         modifiers = new ArrayList<>();
         extendedClasses = new ArrayList<>();
         implementedInterfaces = new ArrayList<>();
@@ -40,8 +38,7 @@ public class ClassBuilder implements Code {
         return this;
     }
 
-    public ClassBuilder addImport(String imp) { return addImport(fromString(throwOnNull(imp))); }
-    public ClassBuilder addImport(Code imp) {
+    public ClassBuilder addImport(String imp) {
         imports.add(throwOnNull(imp));
         return this;
     }
@@ -115,6 +112,7 @@ public class ClassBuilder implements Code {
                     .append(" implements ").beginDelimiter(", ").append(implementedInterfaces).endDelimiter()
                 .endConditional().endDelimiter().append(" {");
 
+        List<Code> imports = this.imports.stream().map(Code::fromString).toList();
         return new CodeBuilder()
                 .beginConditional(packageName != null)
                     .append("package ").append(packageName).append(";").newLine()

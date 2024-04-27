@@ -176,7 +176,7 @@ testGoodProgram :: FilePath -> FilePath -> IO Bool
 testGoodProgram prog f = do
    (output, args) <- getTestData f
    putStr $ "Running " ++ f ++ "... "
-   (s,out,err) <- readProcessWithExitCode prog args ""
+   (s,out,err) <- readProcessWithExitCode prog ("-r" : args) ""
    putStrLnExitCode s "."
    debug $ "Exit code: " ++ show s
    -- Try to work around line ending problem
@@ -198,7 +198,7 @@ testBadProgram :: FilePath -> FilePath -> IO Bool
 testBadProgram prog f = do
   (_, args) <- getTestData f
   putStr $ "Running " ++ f ++ "... "
-  (s,out,err) <- readProcessWithExitCode prog args ""
+  (s,out,err) <- readProcessWithExitCode prog ("-c" :args) ""
   putStrLnExitCode s "."
   debug $ "Exit code: " ++ show s
   -- A. Abel, 2020-11-18 more lenient checking for error report.
@@ -216,7 +216,7 @@ testBadRuntimeProgram :: FilePath -> FilePath -> IO Bool
 testBadRuntimeProgram prog f = do
   (_, args) <- getTestData f
   putStr $ "Running " ++ f ++ "... "
-  (s,out,err) <- readProcessWithExitCode prog args ""
+  (s,out,err) <- readProcessWithExitCode prog ("-r" : args) ""
   putStrLnExitCode s "."
   debug $ "Exit code: " ++ show s
   docmp <- readIORef doCmp
@@ -242,12 +242,12 @@ getTestData f = do
       args   <- getFilesWith ".flux" f
       let destination = transpiler_output </> f
       createDirectoryIfMissing True destination
-      return (output, "-r" : "-o" : destination : args)
+      return (output, "-o" : destination : args)
    else do
       output <- readFileIfExists $ f ++ ".output"
       let destination = transpiler_output </> takeWhile (/= '.') f
       createDirectoryIfMissing True destination
-      return (output, ["-r", "-o", destination, f])
+      return (output, ["-o", destination, f])
    where
       readFirstIfExists (f:_) = readFileIfExists f
       readFirstIfExists _     = return ""

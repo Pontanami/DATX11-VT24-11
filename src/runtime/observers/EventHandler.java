@@ -14,15 +14,13 @@ public final class EventHandler<E> {
         subscribers = new HashMap<>();
     }
 
-    public void addSubscriber(Object subInstance, String callbackName, Consumer<E> callback) {
-        subscribers.put(new Subscriber(subInstance, callbackName), callback);
+    public SubscriberTag _addSubscriber(Object subInstance, String callbackName, Consumer<E> callback) {
+        Subscriber key = new Subscriber(subInstance, callbackName);
+        subscribers.put(key, callback);
+        return new SingleSubscriberTag(() -> subscribers.remove(key));
     }
 
-    public void removeSubscriber(Object subInstance, String callbackName) {
-        subscribers.remove(new Subscriber(subInstance, callbackName));
-    }
-
-    public void publish(E event) {
+    public void _publish(E event) {
         for (Consumer<E> callback : subscribers.values()) {
             callback.accept(event);
         }
@@ -32,11 +30,8 @@ public final class EventHandler<E> {
         return subscribers.size();
     }
 
-    private static class Subscriber {
-        private final Object instance;
-        private final String callbackName;
-
-        Subscriber(Object instance, String callbackName) {
+    private record Subscriber(Object instance, String callbackName) {
+        private Subscriber(Object instance, String callbackName) {
             this.instance = Objects.requireNonNull(instance);
             this.callbackName = Objects.requireNonNull(callbackName);
         }

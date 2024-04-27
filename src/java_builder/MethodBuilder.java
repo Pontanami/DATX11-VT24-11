@@ -26,9 +26,9 @@ public class MethodBuilder implements Code {
 
     /**
      * Create a MethodBuilder with the given value for generateBody
-     * @param generateBody If set to true, the toCode method will include statements in braces following the header
-     *                     If set to false, the toCode method will put a semicolon after header and adding statements
-     *                     will result in an {@link IllegalStateException}.
+     * @param generateBody If set to true, the toCode method will include statements in braces following the header If
+     *                     set to false, the toCode method will put a semicolon after header and adding statements will
+     *                     result in an {@link IllegalStateException}.
      */
     public MethodBuilder(boolean generateBody) {
         modifiers = new ArrayList<>();
@@ -45,10 +45,10 @@ public class MethodBuilder implements Code {
 
     /**
      * Create a MethodBuilder using all the attributes of the given MethodBuilder
-     * @param generateBody If set to true, the toCode method will include statements in braces following the header
-     *                     If set to false, the toCode method will put a semicolon after header and adding statements
-     *                     will result in an {@link IllegalStateException}.
-     * @param source the MethodBuilder to copy from, the attributes themselves are not copied.
+     * @param generateBody If set to true, the toCode method will include statements in braces following the header If
+     *                     set to false, the toCode method will put a semicolon after header and adding statements will
+     *                     result in an {@link IllegalStateException}.
+     * @param source       the MethodBuilder to copy from, the attributes themselves are not copied.
      */
     public MethodBuilder(boolean generateBody, MethodBuilder source) {
         this.returnType = throwOnNull(source).returnType;
@@ -144,12 +144,51 @@ public class MethodBuilder implements Code {
     public List<Code> getStatements()      { return new ArrayList<>(statements); }
     public boolean generatesBody()         { return generateBody; }
 
+    public MethodSignature getSignature() {
+        if (identifier == null) {
+            throw new IllegalArgumentException(
+                    "Cannot create method signature: this MethodBuilder does not have an identifier"
+            );
+        }
+        return new MethodSignature(identifier.toCode(), parameters);
+    }
+
     public boolean signatureEquals(MethodBuilder other) {
         throwOnNull(other);
         if (this.identifier == null || other.identifier == null) {
             throw new IllegalArgumentException("MethodBuilder: Cannot compare signatures, null identifier");
         }
-        return this.identifier.toCode().equals(other.identifier.toCode()) && this.parameters.equals(other.parameters);
+        return getSignature().equals(other.getSignature());
+    }
+
+    /**
+     * Create a 'delegate' method from this method.
+     * @param delegateId the identifier for the object which handles the method implementation
+     * @return a method with the same signature and modifiers as this method, containing a single statement which
+     * forwards the call to {@code delegateId}. If this method is subsequently modified, the modifications will not be
+     * reflected in the returned method.
+     */
+    public MethodBuilder delegateMethod(String delegateId) {
+        String returnType = this.returnType.toCode();
+        String identifier = this.identifier.toCode();
+        MethodBuilder implementation = new MethodBuilder()
+                .setReturnType(returnType)
+                .setIdentifier(identifier);
+        modifiers.forEach(m -> implementation.addModifier(m.toCode()));
+        CodeBuilder delegateCall = new CodeBuilder()
+                .beginConditional(!returnType.equals("void")).append("return ").endConditional()
+                .append(delegateId)
+                .append(".")
+                .append(identifier)
+                .append("(")
+                .beginDelimiter(", ");
+        parameters.forEach(param -> {
+            implementation.addParameter(param);
+            delegateCall.append(param.argId());
+        });
+
+        delegateCall.endDelimiter().append(");");
+        return implementation.addStatement(delegateCall);
     }
 
     @Override
@@ -170,14 +209,22 @@ public class MethodBuilder implements Code {
         return obj;
     }
 
-    /////////////////// Parameters ///////////////////
+    /**
+     * An immutable representation of a method signature consisting of an identifier and a list of parameters.
+     * Equality is based on the identifier and parameter types only (not parameter identifiers)
+     */
+    public record MethodSignature(String identifier, List<Parameter> parameterTypes) {
+        public MethodSignature(String identifier, List<Parameter> parameterTypes) {
+            this.identifier = identifier;
+            this.parameterTypes = List.copyOf(parameterTypes);
+        }
+    }
 
     /**
-     * A method parameter that consists of a type and an identifier. Equality is based on the type only
+     * An immutable representation of a method parameter consisting of a type and an identifier.
+     * Equality is based on the type only (not the identifier).
      */
-    public static final class Parameter implements Code {
-        private final String argType;
-        private final String argId;
+    public record Parameter(String argType, String argId) implements Code {
         public Parameter(String argType, String argId) {
             this.argType = Objects.requireNonNull(argType);
             this.argId = Objects.requireNonNull(argId);
@@ -195,8 +242,6 @@ public class MethodBuilder implements Code {
         }
         @Override
         public int hashCode() { return Objects.hash(argType); }
-        public String getArgType() { return argType; }
-        public String getArgId()   { return argId; }
         @Override
         public String toString() { return "Parameter[argType=" + argType + ", argId=" + argId + ']'; }
     }

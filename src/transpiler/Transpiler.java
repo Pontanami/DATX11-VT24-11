@@ -9,6 +9,8 @@ import transpiler.visitors.StartVisitor;
 
 public class Transpiler {
     private static final String DEFAULT_PACKAGE = "default_package";
+    private static final String DECORATORS_PACKAGE = "runtime.decorators";
+    private static final String OBSERVERS_PACKAGE = "runtime.observers";
 
     private final State state;
 
@@ -65,10 +67,14 @@ public class Transpiler {
         }
         public void addClass(ClassBuilder builder) {
             String identifier = validateId(builder.getIdentifier());
+            builder.addImport(OBSERVERS_PACKAGE + ".*");
+            builder.addImport(DECORATORS_PACKAGE + ".*");
             classes.put(identifier, builder);
         }
         public void addInterface(InterfaceBuilder builder) {
             String identifier = validateId(builder.getIdentifier());
+            builder.addImport(OBSERVERS_PACKAGE + ".*");
+            builder.addImport(DECORATORS_PACKAGE + ".*");
             interfaces.put(identifier, builder);
         }
         public void addSource(String fileName, ProgramContext source) {

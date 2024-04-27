@@ -1,14 +1,13 @@
 package runtime.decorators;
 
-public final class DecoratorTag implements Tag {
+public final class DecoratorTag {
     private Runnable deleteAction;
 
     DecoratorTag(Runnable deleteAction) {
         this.deleteAction = deleteAction;
     }
 
-    @Override
-    public void delete() {
+    public void deleteDecorator() {
         if (deleteAction != null) { // only run delete the first time
             deleteAction.run();
             deleteAction = null;

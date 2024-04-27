@@ -1,14 +1,11 @@
 package transpiler.visitors;
 
-import grammar.gen.ConfluxLexer;
 import grammar.gen.ConfluxParserBaseVisitor;
 import grammar.gen.ConfluxParserVisitor;
 import java_builder.Code;
 import java_builder.CodeBuilder;
-import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.RuleNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
-import transpiler.Environment;
 
 import java.util.List;
 
@@ -25,39 +22,19 @@ public class StatementTranspiler extends ConfluxParserBaseVisitor<Code> {
 
     @Override
     public Code visitStatement(StatementContext ctx) {
-        return visitFirst(ctx);
-    }
-
-    @Override
-    public Code visitJavaStatement(JavaStatementContext ctx) {
-        if (ctx.SEMI() != null) {
-            return new CodeBuilder().append(visitFirst(ctx)).append(";");
+        if (ctx.getChildCount() == 1) {
+            return ctx.getChild(0).accept(this);
         }
-        return visitFirst(ctx);
-    }
-
-    @Override
-    public Code visitObserverStatement(ObserverStatementContext ctx) {
-        return visitFirst(ctx);
-    }
-
-    private Code visitFirst(ParserRuleContext ctx) {
-        return ctx.getChild(0).accept(this);
+        CodeBuilder result = new CodeBuilder();
+        for (int i = 0; i < ctx.getChildCount(); i++) {
+            result.append(ctx.getChild(i).accept(this));
+        }
+        return result;
     }
 
     @Override
     public Code visitPublishStatement(PublishStatementContext ctx) {
         return Code.fromString(obsVisitor.visitPublishStatement(ctx));
-    }
-
-    @Override
-    public Code visitAddSubscriberStatement(AddSubscriberStatementContext ctx) {
-        return Code.fromString(obsVisitor.visitAddSubscriberStatement(ctx));
-    }
-
-    @Override
-    public Code visitRemoveSubscriberStatement(RemoveSubscriberStatementContext ctx) {
-        return Code.fromString(obsVisitor.visitRemoveSubscriberStatement(ctx));
     }
 
     @Override
@@ -116,8 +93,8 @@ public class StatementTranspiler extends ConfluxParserBaseVisitor<Code> {
     }
 
     private CodeBuilder addNestedStatements(CodeBuilder builder, StatementContext stm) {
-        if (stm.javaStatement() != null && stm.javaStatement().block() != null) {
-            List<Code> stms = stm.javaStatement().block().statement().stream().map(this::visitStatement).toList();
+        if (stm.block() != null) {
+            List<Code> stms = stm.block().statement().stream().map(this::visitStatement).toList();
             builder.append(" {").appendLine(1, stms).appendLine(0, "}");
         } else {
             builder.appendLine(1, visitStatement(stm));
@@ -172,13 +149,6 @@ public class StatementTranspiler extends ConfluxParserBaseVisitor<Code> {
 
     @Override
     public Code visitTerminal(TerminalNode node) {
-        String source;
-        if (node.getSymbol().getType() == ConfluxLexer.Identifier)
-            source = Environment.escapeJavaKeyword(node.toString());
-        else if (node.getSymbol().getType() == ConfluxLexer.BASE)
-            source = Environment.reservedId("getBase") + "()";
-        else
-            source = node.getText();
-        return Code.fromString(source);
+        return Code.fromString(expVisitor.visitTerminal(node));
     }
 }

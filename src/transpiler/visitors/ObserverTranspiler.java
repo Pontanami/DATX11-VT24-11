@@ -4,7 +4,6 @@ import grammar.gen.ConfluxParser.*;
 import grammar.gen.ConfluxParserBaseVisitor;
 import grammar.gen.ConfluxParserVisitor;
 import java_builder.*;
-import org.antlr.v4.runtime.tree.RuleNode;
 import transpiler.Environment;
 import transpiler.TranspilerState;
 import transpiler.tasks.TaskQueue;
@@ -14,25 +13,25 @@ import java.util.*;
 
 import static transpiler.tasks.TaskQueue.Priority;
 
-// Visitor for everything related to observers, handles the following methods:
-// visitTypePublishes
-// visitPublishStatement
-// visitAddSubscriberStatement
-// visitRemoveSubscriberStatement
+// Transpiles everything related to observers:
 public class ObserverTranspiler extends ConfluxParserBaseVisitor<String> {
-    private static final String publish = Environment.reservedId("publish");
-    private static final String addSubscriber = Environment.reservedId("addSubscriber");
-    private static final String removeSubscriber = Environment.reservedId("removeSubscriber");
+    private static final String SUBSCRIBER_TAG_TYPE_ID = "SubscriberTag";
+    private static final String COMPOSITE_TAG_TYPE_ID = "CompositeSubscriberTag";
+    private static final String PUBLISH = Environment.reservedId("publish");
+    private static final String ADD_SUBSCRIBER = Environment.reservedId("addSubscriber");
 
     private final TaskQueue taskQueue;
-    private final ConfluxParserVisitor<String> expressionTranspiler;
+    private ConfluxParserVisitor<String> expressionTranspiler;
 
     private String typeId;
     private String classId;
 
-    public ObserverTranspiler(TaskQueue taskQueue, ConfluxParserVisitor<String> expTranspiler) {
+    public ObserverTranspiler(TaskQueue taskQueue) {
         this.taskQueue = taskQueue;
-        this.expressionTranspiler = expTranspiler;
+    }
+
+    public void setExpressionTranspiler(ConfluxParserVisitor<String> expressionTranspiler) {
+        this.expressionTranspiler = expressionTranspiler;
     }
 
     @Override
@@ -47,17 +46,20 @@ public class ObserverTranspiler extends ConfluxParserBaseVisitor<String> {
 
     @Override
     public String visitTypePublishes(TypePublishesContext ctx) {
-        ObserverTask task = new ObserverTask(typeId, classId);
-        taskQueue.addTask(Priority.MAKE_OBSERVERS, task);
+        List<String> eventTypes = ctx.type().stream().map(ObserverTranspiler::autobox).toList();
+
+        taskQueue.addTask(Priority.MAKE_OBSERVER_INTERFACES, new PublisherInterfaceTask(typeId, eventTypes));
+        taskQueue.addTask(Priority.MAKE_OBSERVER_INTERFACES, new CallbackInterfaceTask(eventTypes));
+        taskQueue.addTask(Priority.MAKE_OBSERVER_CLASSES, new PublisherClassTask(typeId, classId));
         return "";
     }
 
     @Override
     public String visitPublishStatement(PublishStatementContext ctx) {
-        String explicitEventType = getExplicitEventType(ctx.explicitEventType());
+        String explicitEventType = visitExplicitEventType(ctx.explicitEventType());
         String event = ctx.expression().accept(expressionTranspiler);
         return new CodeBuilder()
-                .append(publish).append("(")
+                .append(PUBLISH).append("(")
                 .beginConditional(explicitEventType != null)
                 .append("(").append(explicitEventType).append(") ")
                 .endConditional()
@@ -67,51 +69,58 @@ public class ObserverTranspiler extends ConfluxParserBaseVisitor<String> {
     }
 
     @Override
-    public String visitAddSubscriberStatement(AddSubscriberStatementContext ctx) {
+    public String visitAddSubscriber(AddSubscriberContext ctx) {
         String publisher = ctx.publisherExpression().accept(expressionTranspiler);
         String subscriber = ctx.subscriberExpression().accept(expressionTranspiler);
         String callback = ctx.subscriberCallback().getText();
-        String explicitEventType = getExplicitEventType(ctx.explicitEventType());
 
+        if (ctx.explicitEventTypes() == null) {
+            return addSubscriberCall(publisher, subscriber, callback, null);
+        } else if (ctx.explicitEventTypes().type().size() == 1) {
+            String eventType = autobox(ctx.explicitEventTypes().type().get(0));
+            return addSubscriberCall(publisher, subscriber, callback, eventType);
+        } else {
+            CodeBuilder builder = new CodeBuilder()
+                    .append("new ").append(COMPOSITE_TAG_TYPE_ID).append("(").beginDelimiter(", ");
+            ctx.explicitEventTypes().type().forEach(t ->
+                    builder.append(addSubscriberCall(publisher, subscriber, callback, autobox(t)))
+            );
+            return builder.endDelimiter().append(")").toCode();
+        }
+    }
+
+    private String addSubscriberCall(String publisher, String subscriber, String callback, String eventType) {
         return new CodeBuilder()
-                .append(publisher).append(".").append(addSubscriber).append("(")
+                .append(publisher).append(".").append(ADD_SUBSCRIBER).append("(")
                 .beginDelimiter(", ")
                 .append(subscriber)
                 .append('"' + callback + '"')
                 .append(new CodeBuilder()
-                        .beginConditional(explicitEventType != null)
-                        .append("(").append(subscriberCallbackType(explicitEventType)).append(") ")
+                        .beginConditional(eventType != null)
+                        .append("(").append(subscriberCallbackType(eventType)).append(") ")
                         .endConditional()
                         .append(subscriber).append("::").append(callback)
                 ).endDelimiter()
-                .append(");")
+                .append(")")
                 .toCode();
     }
 
     @Override
-    public String visitRemoveSubscriberStatement(RemoveSubscriberStatementContext ctx) {
-        String publisher = ctx.publisherExpression().accept(expressionTranspiler);
-        String subscriber = ctx.subscriberExpression().accept(expressionTranspiler);
-        String callback = ctx.subscriberCallback().getText();
-        String explicitEventType = getExplicitEventType(ctx.explicitEventType());
-
-        return new CodeBuilder()
-                .append(publisher).append(".").append(removeSubscriber).append("(")
-                .beginDelimiter(", ")
-                .append(subscriber)
-                .append('"' + callback + '"')
-                .append(new CodeBuilder()
-                        .beginConditional(explicitEventType != null)
-                        .append("(").append(subscriberCallbackType(explicitEventType)).append(") ")
-                        .endConditional()
-                        .append(subscriber).append("::").append(callback)
-                ).endDelimiter()
-                .append(");")
-                .toCode();
+    public String visitExplicitEventType(ExplicitEventTypeContext ctx) {
+        return ctx == null ? null : autobox(ctx.type());
     }
 
-    private String getExplicitEventType(ExplicitEventTypeContext ctx) {
-        return ctx == null ? null : autobox(ctx.type());
+    private static String autobox(TypeContext ctx) {
+        String type = ctx.getText();
+        return switch (type) {
+            case "byte" -> "Byte";
+            case "short" -> "Short";
+            case "int" -> "Integer";
+            case "long" -> "Long";
+            case "float" -> "Float";
+            case "double" -> "Double";
+            default -> type;
+        };
     }
 
     // Create the name of the event handler instance variable that the publisher uses
@@ -123,159 +132,96 @@ public class ObserverTranspiler extends ConfluxParserBaseVisitor<String> {
         return Environment.reservedId(eventType + "Callback");
     }
 
-    // Represents the task of adding all the methods/instance variables to publisher classes/interfaces
-    static class ObserverTask implements TranspilerTask {
-        private final String typeId;
-        private final String classId;
+    ///////////////////////////////////////// Observer tasks /////////////////////////////////////////////////
 
-        ObserverTask(String typeId, String classId) {
-            this.typeId = typeId;
-            this.classId = classId;
-        }
-
+    // Add methods to the publisher interfaces
+    private record PublisherInterfaceTask(String typeId, List<String> eventTypes) implements TranspilerTask {
         @Override
         public void run(TranspilerState state) {
-            InterfaceBuilder publisherInterface = typeId == null ? null : state.lookupInterface(typeId);
-            if (publisherInterface != null) {
-                List<String> eventTypes = state.lookupSource(typeId).accept(new EventTypesGetter());
-                for (String eventType : eventTypes) {
-                    addPublisherInterfaceMethods(eventType, publisherInterface);
-                    addSubscriberCallbackInterface(state, eventType);
-                }
-            }
-            ClassBuilder publisherClass = classId == null ? null : state.lookupClass(classId);
-            if (publisherClass != null) {
-                addPublisherClassAttributes(publisherClass, getAllClassEvents(state));
-            }
-        }
-
-        private void addPublisherInterfaceMethods(String eventType, InterfaceBuilder publisherInterface) {
-            publisherInterface.addMethod(new MethodBuilder(false, addSubscriberMethod(eventType)))
-                              .addMethod(new MethodBuilder(false, removeSubscriberMethod(eventType)))
-                              .addMethod(new MethodBuilder(false, publishMethod(eventType)));
-        }
-
-        private void addSubscriberCallbackInterface(TranspilerState state, String eventType) {
-            String callbackType = subscriberCallbackType(eventType);
-            if (!state.doesJavaIdExist(callbackType)) {
-                state.addInterface(new InterfaceBuilder()
-                        .addImport("java.util.function.Consumer")
-                        .addModifier("public")
-                        .setIdentifier(callbackType)
-                        .addExtendedInterface("Consumer<" + eventType + ">")
-                );
-            }
-        }
-        // Return the set of all event types that can be published by the type from which the current class is generated
-        // as well as all its supertypes
-        private Set<String> getAllClassEvents(TranspilerState state) {
-            Set<String> classEventTypes = new HashSet<>();
-            // stack of supertypes that need to be checked for additional published events
-            Deque<Code> unchecked = new ArrayDeque<>(state.lookupClass(classId).getImplementedInterfaces());
-            while (!unchecked.isEmpty()) {
-                String superType = unchecked.pop().toCode();
-                classEventTypes.addAll(state.lookupSource(superType).accept(new EventTypesGetter()));
-                unchecked.addAll(state.lookupInterface(superType).getExtendedInterfaces());
-            }
-            return classEventTypes;
-        }
-        // Add all the methods and fields necessary for publisher classes, to the given class
-        private void addPublisherClassAttributes(ClassBuilder publisherClass, Set<String> eventTypes) {
-            boolean firstEvent = true;
+            InterfaceBuilder publisher = typeId == null ? null : state.lookupInterface(typeId);
+            if (publisher == null)
+                return;
             for (String eventType : eventTypes) {
-                if (firstEvent) {
-                    publisherClass.addImport(Environment.OBSERVERS_PACKAGE + ".EventHandler");
-                    firstEvent = false;
+                publisher.addMethod(addSubscriberMethod(eventType))
+                         .addMethod(publishMethod(eventType));
+            }
+        }
+    }
+    // Create callback interfaces for the given event types
+    private record CallbackInterfaceTask(List<String> eventTypes) implements TranspilerTask {
+        @Override
+        public void run(TranspilerState state) {
+            for (String eventType : eventTypes) {
+                String callbackType = subscriberCallbackType(eventType);
+                if (!state.doesJavaIdExist(callbackType)) {
+                    state.addInterface(new InterfaceBuilder()
+                            .addImport("java.util.function.Consumer")
+                            .addModifier("public")
+                            .setIdentifier(callbackType)
+                            .addExtendedInterface("Consumer<" + eventType + ">")
+                    );
                 }
-                publisherClass.addField(handlerVariable(eventType))
-                              .addMethod(publishMethod(eventType))
-                              .addMethod(addSubscriberMethod(eventType))
-                              .addMethod(removeSubscriberMethod(eventType));
+            }
+        }
+    }
+    // Add methods and fields to publisher classes
+    private record PublisherClassTask(String typeId, String classId) implements TranspilerTask {
+        @Override
+        public void run(TranspilerState state) {
+            ClassBuilder publisher = classId == null ? null : state.lookupClass(classId);
+            if (publisher == null)
+                return;
+
+            List<String> eventTypes = getEventTypes(state);
+            for (String eventType : eventTypes) {
+                String handlerId = eventHandlerId(eventType);
+                publisher.addField(handlerVariable(eventType))
+                         .addMethod(publishMethod(eventType).delegateMethod(handlerId))
+                         .addMethod(addSubscriberMethod(eventType).delegateMethod(handlerId));
             }
         }
 
-        private Code handlerVariable(String eventType) {
-            String handlerType = "EventHandler<" + eventType + ">";
-            return new CodeBuilder()
-                    .beginDelimiter(" ")
-                    .append("private final")
-                    .append(handlerType)
-                    .append(eventHandlerId(eventType))
-                    .append("= new")
-                    .append(handlerType)
-                    .endDelimiter()
-                    .append("();");
-        }
-        private MethodBuilder publishMethod(String eventType) {
-            return new MethodBuilder()
-                    .addModifier("public")
-                    .setReturnType("void")
-                    .setIdentifier(publish)
-                    .addParameter(eventType, "event")
-                    .addStatement(new CodeBuilder().append(eventHandlerId(eventType)).append(".publish(event);"));
-        }
-        private MethodBuilder addSubscriberMethod(String eventType) {
-            return new MethodBuilder()
-                    .addModifier("public")
-                    .setReturnType("void")
-                    .setIdentifier(addSubscriber)
-                    .addParameter("Object", "subscriber")
-                    .addParameter("String", "callbackName")
-                    .addParameter(subscriberCallbackType(eventType), "callback")
-                    .addStatement(new CodeBuilder()
-                            .append(eventHandlerId(eventType))
-                            .append(".addSubscriber(subscriber, callbackName, callback);"));
-        }
-        private MethodBuilder removeSubscriberMethod(String eventType) {
-            return new MethodBuilder()
-                    .addModifier("public")
-                    .setReturnType("void")
-                    .setIdentifier(removeSubscriber)
-                    .addParameter("Object", "subscriber")
-                    .addParameter("String", "callbackName")
-                    .addParameter(subscriberCallbackType(eventType), "ignored") // needed for type checking only
-                    .addStatement(new CodeBuilder()
-                            .append(eventHandlerId(eventType))
-                            .append(".removeSubscriber(subscriber, callbackName);"));
+        private List<String> getEventTypes(TranspilerState state) { //TODO: (quick fix solution) could be more robust
+            List<String> eventTypes = new ArrayList<>();
+            state.lookupInterface(typeId).getMethods().forEach(m -> {
+                if (m.getIdentifier().toCode().equals(PUBLISH)) {
+                    eventTypes.add(m.getParameters().get(0).argType());
+                }
+            });
+            return eventTypes;
         }
     }
 
-    // Visitor for getting all the publishable event types from a type
-    private static class EventTypesGetter extends ConfluxParserBaseVisitor<List<String>> {
-        @Override
-        public List<String> visitProgram(ProgramContext ctx) {
-            if (ctx.typeDeclaration() != null) {
-                return visitTypeDeclaration(ctx.typeDeclaration());
-            }
-            return defaultResult();
-        }
-        @Override
-        public List<String> visitTypeDeclaration(TypeDeclarationContext ctx) {
-            return visitTypePublishes(ctx.typePublishes());
-        }
-        @Override
-        public List<String> visitTypePublishes(TypePublishesContext ctx) {
-            if (ctx != null) {
-                return ctx.type().stream().map(ObserverTranspiler::autobox).toList();
-            }
-            return defaultResult();
-        }
-        @Override
-        protected boolean shouldVisitNextChild(RuleNode node, List<String> currentResult) {
-            return false;
-        }
-        @Override
-        protected List<String> defaultResult() {
-            return List.of();
-        }
+    ////////////////////////////////////// Generated Publisher Methods/Fields ///////////////////////////////////////
+
+    private static Code handlerVariable(String eventType) {
+        String handlerType = "EventHandler<" + eventType + ">";
+        return new CodeBuilder()
+                .beginDelimiter(" ")
+                .append("private final")
+                .append(handlerType)
+                .append(eventHandlerId(eventType))
+                .append("= new")
+                .append(handlerType)
+                .endDelimiter()
+                .append("();");
     }
 
-    private static String autobox(TypeContext ctx) {
-        String type = ctx.getText();
-        return switch (type) {
-            case "int" -> "Integer";
-            case "float" -> "Float";
-            default -> type;
-        };
+    private static MethodBuilder publishMethod(String eventType) {
+        return new MethodBuilder(false)
+                .addModifier("public")
+                .setReturnType("void")
+                .setIdentifier(PUBLISH)
+                .addParameter(eventType, "event");
+    }
+
+    private static MethodBuilder addSubscriberMethod(String eventType) {
+        return new MethodBuilder(false)
+                .addModifier("public")
+                .setReturnType(SUBSCRIBER_TAG_TYPE_ID)
+                .setIdentifier(ADD_SUBSCRIBER)
+                .addParameter("Object", "subscriber")
+                .addParameter("String", "callbackName")
+                .addParameter(subscriberCallbackType(eventType), "callback");
     }
 }

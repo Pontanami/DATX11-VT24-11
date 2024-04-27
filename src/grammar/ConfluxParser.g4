@@ -100,27 +100,20 @@ mainBlock : MAIN LPAREN type Identifier RPAREN LBRACE statement* RBRACE ;
 decoratorBody : constructorsBlock? attributesBlock? methodBlock? ;
 
 //Statements -------------------------------------------------------------------------------------------------------
-statement : javaStatement
-          | observerStatement
+
+statement : expression SEMI
+          | assignment SEMI
+          | declaration SEMI
+          | forStatement
+          | ifStatement
+          | whileStatement
+          | switchStatement
+          | returnStatement
+          | publishStatement
+          | block
+          | BREAK SEMI
+          | CONTINUE SEMI
           ;
-
-javaStatement : expression SEMI
-              | assignment SEMI
-              | declaration SEMI
-              | forStatement
-              | ifStatement
-              | whileStatement
-              | switchStatement
-              | returnStatement
-              | block
-              | BREAK SEMI
-              | CONTINUE SEMI
-              ;
-
-observerStatement : publishStatement
-                  | addSubscriberStatement
-                  | removeSubscriberStatement
-                  ;
 
 assignment : assignmentLeftHandSide ASSIGN expression ;
 
@@ -146,16 +139,7 @@ default : DEFAULT COLON statement* ;
 
 publishStatement : PUBLISH expression explicitEventType? SEMI ;
 
-addSubscriberStatement : publisherExpression ADD SUBSCRIBER subscriberExpression
-                         COLONCOLON subscriberCallback explicitEventType? SEMI;
-
-removeSubscriberStatement : publisherExpression REMOVE SUBSCRIBER subscriberExpression
-                            COLONCOLON subscriberCallback explicitEventType? SEMI;
-
 explicitEventType : LPAREN type RPAREN ;
-publisherExpression : expression ;
-subscriberExpression : expression ;
-subscriberCallback : Identifier ;
 
 //Expressions -------------------------------------------------------------------------------------------------------
 expression: LPAREN expression RPAREN
@@ -163,6 +147,7 @@ expression: LPAREN expression RPAREN
           | qualifiedIdentifier
           | methodChain
           | addDecorator
+          | addSubscriber
           | arrayConstructor
           | arrayAccess
           | qualifiedIdentifier (INC | DEC)
@@ -197,6 +182,16 @@ methodChain : methodCall (DOT methodCall)* ;
 
 methodCall : qualifiedIdentifier LPAREN parameterList? RPAREN;
 
+addSubscriber : publisherExpression ADD SUBSCRIBER subscriberExpression
+                COLONCOLON subscriberCallback explicitEventTypes?;
+
+publisherExpression : referenceExpression ;
+subscriberExpression : referenceExpression ;
+subscriberCallback : Identifier ;
+explicitEventTypes : LPAREN type (COMMA type)* RPAREN ;
+
 addDecorator : decoratedObject ADD DECORATOR decoratorId DOT methodId LPAREN parameterList? RPAREN ;
 
-decoratedObject : methodChain | arrayAccess | qualifiedIdentifier ;
+decoratedObject : referenceExpression ;
+
+referenceExpression : methodChain | arrayAccess | qualifiedIdentifier ;

@@ -151,13 +151,13 @@ public class DecoratorTest2 {
 
         System.out.println();
         System.out.println("------- delete muffler 1 -----------");
-        muffler1.delete();
+        muffler1.deleteDecorator();
         car.gas();
         car.brake(0);
 
         System.out.println();
         System.out.println("------- delete muffler 2 -----------");
-        muffler2.delete();
+        muffler2.deleteDecorator();
         car.gas();
         car.brake(0);
 

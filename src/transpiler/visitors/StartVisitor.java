@@ -15,28 +15,40 @@ import static grammar.gen.ConfluxParser.*;
 
 public class StartVisitor extends ConfluxParserBaseVisitor<Void> {
     private final TaskQueue taskQ;
-    private final ConfluxParserVisitor<Void> classTranspiler;
-    private final ConfluxParserVisitor<Void> interfaceTranspiler;
-    private final ConfluxParserVisitor<Void> constructorTranspiler;
-    private final ConfluxParserVisitor<String> observerTranspiler;
-    private final ConfluxParserVisitor<Code> statementTranspiler;
+    private final ClassTranspiler classTranspiler;
+    private final InterfaceTranspiler interfaceTranspiler;
+    private final ConstructorTranspiler constructorTranspiler;
+    private final ObserverTranspiler observerTranspiler;
+    private final DecoratorTranspiler decoratorTranspiler;
+    private final StatementTranspiler statementTranspiler;
 
     private String typeFileName;
     private boolean generateClass;
 
     public StartVisitor(TaskQueue taskQ) {
         this.taskQ = taskQ;
-        var expTranspiler = new ExpressionTranspiler();
-        observerTranspiler = new ObserverTranspiler(taskQ, expTranspiler);
+        ExpressionTranspiler expTranspiler = new ExpressionTranspiler();
+
+        observerTranspiler = new ObserverTranspiler(taskQ);
         statementTranspiler = new StatementTranspiler(observerTranspiler, expTranspiler);
+        decoratorTranspiler = new DecoratorTranspiler(taskQ, statementTranspiler);
         constructorTranspiler = new ConstructorTranspiler(taskQ, statementTranspiler);
         classTranspiler = new ClassTranspiler(taskQ, statementTranspiler);
         interfaceTranspiler = new InterfaceTranspiler(taskQ, statementTranspiler);
+
+        expTranspiler.setDecoratorTranspiler(decoratorTranspiler);
+        expTranspiler.setObserverTranspiler(observerTranspiler);
+        observerTranspiler.setExpressionTranspiler(expTranspiler);
+        decoratorTranspiler.setExpressionTranspiler(expTranspiler);
     }
 
     @Override
     public Void visitProgram(ProgramContext ctx) {
-        return ctx.getChild(0).accept(this);
+        if (ctx.typeDeclaration() != null)
+            visitTypeDeclaration(ctx.typeDeclaration());
+        else if (ctx.decoratorDeclaration() != null)
+            visitDecoratorDeclaration(ctx.decoratorDeclaration());
+        return null;
     }
 
     @Override
@@ -53,6 +65,7 @@ public class StartVisitor extends ConfluxParserBaseVisitor<Void> {
         if (generateClass) {
             ctx.accept(classTranspiler);
             ctx.accept(constructorTranspiler);
+            ctx.accept(decoratorTranspiler); // Generate decorator wrapper class
         }
         if (ctx.typeBody().mainBlock() != null) {
             visitMainBlock(ctx.typeBody().mainBlock());
@@ -62,7 +75,9 @@ public class StartVisitor extends ConfluxParserBaseVisitor<Void> {
 
     @Override
     public Void visitDecoratorDeclaration(DecoratorDeclarationContext ctx) {
-        return null; //TODO: transpile decorators
+        constructorTranspiler.visitDecoratorDeclaration(ctx);
+        decoratorTranspiler.visitDecoratorDeclaration(ctx);
+        return null;
     }
 
     @Override

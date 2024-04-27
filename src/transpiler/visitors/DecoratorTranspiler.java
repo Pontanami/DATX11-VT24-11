@@ -1,24 +1,25 @@
 package transpiler.visitors;
 
+import grammar.gen.ConfluxLexer;
+import grammar.gen.ConfluxParser;
 import grammar.gen.ConfluxParser.*;
 import grammar.gen.ConfluxParserBaseVisitor;
 import grammar.gen.ConfluxParserVisitor;
 import java_builder.*;
-import java_builder.MethodBuilder.Parameter;
+import java_builder.MethodBuilder.MethodSignature;
+import org.antlr.v4.runtime.tree.TerminalNode;
 import transpiler.Environment;
 import transpiler.TranspilerException;
 import transpiler.TranspilerState;
 import transpiler.tasks.TaskQueue;
 import transpiler.tasks.TranspilerTask;
 
-import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import static transpiler.tasks.TaskQueue.Priority;
 
-public class DecoratorTranspiler extends ConfluxParserBaseVisitor<Void> {
+public class DecoratorTranspiler extends ConfluxParserBaseVisitor<String> {
     private static final String DECORATOR_TYPE_ID = Environment.reservedId("Decorator");
     private static final String ABSTRACT_DECORATOR_TYPE_ID = Environment.reservedId("AbstractDecorator");
     private static final String DECORATOR_TAG_TYPE_ID = "DecoratorTag";
@@ -28,9 +29,11 @@ public class DecoratorTranspiler extends ConfluxParserBaseVisitor<Void> {
     private static final String DECORATOR_HANDLER_VAR_ID = Environment.reservedId("decoratorHandler");
     private static final String HANDLER_ADD_DECORATOR = "addDecorator";
     private static final String HANDLER_GET_DECORATED = "getTopLevelDecorator";
+    private static final String BASE = Environment.reservedId("getBase");
 
     private final TaskQueue taskQueue;
     private final ConfluxParserVisitor<Code> stmTranspiler;
+    private ConfluxParserVisitor<String> expressionTranspiler;
 
     private String decoratorId;
     private ClassBuilder decoratorClass;
@@ -40,43 +43,45 @@ public class DecoratorTranspiler extends ConfluxParserBaseVisitor<Void> {
         this.stmTranspiler = stmTranspiler;
     }
 
+    public void setExpressionTranspiler(ConfluxParserVisitor<String> expressionTranspiler) {
+        this.expressionTranspiler = expressionTranspiler;
+    }
+
     @Override
-    public Void visitProgram(ProgramContext ctx) {
+    public String visitProgram(ProgramContext ctx) {
         if (ctx.typeDeclaration() != null)
             visitTypeDeclaration(ctx.typeDeclaration());
         else if (ctx.decoratorDeclaration() != null)
             visitDecoratorDeclaration(ctx.decoratorDeclaration());
-        return null;
+        return defaultResult();
     }
 
     @Override
-    public Void visitTypeDeclaration(TypeDeclarationContext ctx) {
+    public String visitTypeDeclaration(TypeDeclarationContext ctx) {
         if (canTypeBeDecorated(ctx)) {
             // add wrapper classes for types that can be decorated
             String wrappedType = ctx.Identifier().getText();
             taskQueue.addTask(Priority.MAKE_DECORATOR_WRAPPER, new CreateDecoratorWrapperTask(wrappedType));
         }
-        return null;
+        return defaultResult();
     }
 
     @Override
-    public Void visitDecoratorDeclaration(DecoratorDeclarationContext ctx) {
+    public String visitDecoratorDeclaration(DecoratorDeclarationContext ctx) {
         decoratorClass = new ClassBuilder();
         decoratorId = ctx.decoratorId().getText();
         decoratorClass.setIdentifier(Environment.classId(decoratorId));
-
-        //TODO: add constructors to decorators using ConstructorTranspiler
         visitDecoratorBody(ctx.decoratorBody());
 
         //Add decorator class to transpiler state
         taskQueue.addTask(Priority.ADD_CLASS, new AddClassTask(decoratorClass));
         //Add decorator-specific fields and methods to decorator class
         taskQueue.addTask(Priority.MAKE_DECORATORS, new CreateDecoratorTask(ctx.typeId().getText(), decoratorId));
-        return null;
+        return defaultResult();
     }
 
     @Override
-    public Void visitDecoratorBody(DecoratorBodyContext ctx) {
+    public String visitDecoratorBody(DecoratorBodyContext ctx) {
         if (ctx.attributesBlock() != null) {
             visitAttributesBlock(ctx.attributesBlock());
         }
@@ -84,38 +89,68 @@ public class DecoratorTranspiler extends ConfluxParserBaseVisitor<Void> {
         if (ctx.methodBlock() != null) {
             visitMethodBlock(ctx.methodBlock());
         }
-        return null;
+        return defaultResult();
     }
 
     @Override
-    public Void visitAttributesBlock(AttributesBlockContext ctx) {
+    public String visitAttributesBlock(AttributesBlockContext ctx) {
         ctx.attributeDeclaration().forEach(this::visitAttributeDeclaration);
-        return null;
+        return defaultResult();
     }
 
     @Override
-    public Void visitAttributeDeclaration(AttributeDeclarationContext ctx) {
-        if (ctx.AS() != null) { //TODO: maybe allow auto-generated getters for decorator?
+    public String visitAttributeDeclaration(AttributeDeclarationContext ctx) {
+        if (ctx.AS() != null) { //TODO: maybe allow auto-generated getters for decorators?
             throw new TranspilerException("Illegal getter generation for decorator '" + decoratorId + "'");
         }
         String field = stmTranspiler.visitDeclaration(ctx.declaration()).toCode();
         decoratorClass.addField("private " + field + ";");
-        return null;
+        return defaultResult();
     }
 
     @Override
-    public Void visitMethodBlock(MethodBlockContext ctx) {
+    public String visitMethodBlock(MethodBlockContext ctx) {
         ctx.methodDeclaration().forEach(this::visitMethodDeclaration);
-        return null;
+        return defaultResult();
     }
 
     @Override
-    public Void visitMethodDeclaration(MethodDeclarationContext ctx) {
-        MethodBuilder method = new MethodBuilder().addModifier("public"); //TODO: maybe make public only if it's from the interface
+    public String visitMethodDeclaration(MethodDeclarationContext ctx) {
+        //TODO: maybe make method public only if it's from the interface
+        MethodBuilder method = new MethodBuilder().addModifier("public");
         MethodTranspiler methodTranspiler = new MethodTranspiler(method, stmTranspiler);
         methodTranspiler.visitMethodDeclaration(ctx);
         decoratorClass.addMethod(method);
-        return null;
+        return defaultResult();
+    }
+
+    @Override
+    public String visitAddDecorator(ConfluxParser.AddDecoratorContext ctx) {
+        return "%s.%s(%s.%s(%s))".formatted(
+                expressionTranspiler.visitDecoratedObject(ctx.decoratedObject()),
+                ADD_DECORATOR_METHOD_ID,
+                visitDecoratorId(ctx.decoratorId()),
+                expressionTranspiler.visitMethodId(ctx.methodId()),
+                ctx.parameterList() == null ? "" : expressionTranspiler.visitParameterList(ctx.parameterList())
+        );
+    }
+
+    @Override
+    public String visitDecoratorId(ConfluxParser.DecoratorIdContext ctx) {
+        return Environment.classId(ctx.getText()); //Make the constructor 'visible' from the Conflux source
+    }
+
+    @Override
+    public String visitTerminal(TerminalNode node) {
+        if (node.getSymbol().getType() == ConfluxLexer.BASE) {
+            return BASE + "()";
+        }
+        return expressionTranspiler.visitTerminal(node);
+    }
+
+    @Override
+    protected String defaultResult() {
+        return "";
     }
 
     private static class CreateDecoratorTask implements TranspilerTask {
@@ -159,14 +194,14 @@ public class DecoratorTranspiler extends ConfluxParserBaseVisitor<Void> {
 
         private void implementMethods(InterfaceBuilder baseInterface, ClassBuilder decoratorClass) {
             Set<MethodSignature> implementedMethods = decoratorClass
-                    .getMethods().stream().map(MethodSignature::new).collect(Collectors.toSet());
+                    .getMethods().stream().map(MethodBuilder::getSignature).collect(Collectors.toSet());
 
             for (MethodBuilder method : baseInterface.getMethods()) {
                 boolean isStatic = method.getModifiers().stream().anyMatch(c -> c.toCode().equals("static"));
-                boolean isImplemented = implementedMethods.contains(new MethodSignature(method));
+                boolean isImplemented = implementedMethods.contains(method.getSignature());
 
                 if (!isStatic && !isImplemented) {
-                    decoratorClass.addMethod(makeDelegateMethod(method, Environment.reservedId("getBase()")));
+                    decoratorClass.addMethod(method.delegateMethod(Environment.reservedId("getBase()")));
                 }
             }
         }
@@ -193,8 +228,9 @@ public class DecoratorTranspiler extends ConfluxParserBaseVisitor<Void> {
             wrappedInterface.getMethods().forEach(method -> {
                 boolean isAddDecoratorMethod = method.getIdentifier().toCode().equals(ADD_DECORATOR_METHOD_ID);
                 boolean isStatic = method.getModifiers().stream().anyMatch(c -> c.toCode().equals("static"));
+
                 if (!isStatic && !isAddDecoratorMethod) {
-                    wrapperClass.addMethod(makeDelegateMethod(method, getDelegate));
+                    wrapperClass.addMethod(method.delegateMethod(getDelegate));
                 }
             });
             state.addClass(wrapperClass);
@@ -234,50 +270,6 @@ public class DecoratorTranspiler extends ConfluxParserBaseVisitor<Void> {
                 method.addModifier("default");
             return method;
 
-        }
-    }
-
-    private static MethodBuilder makeDelegateMethod(MethodBuilder method, String delegateId) {
-        String returnType = method.getReturnType().toCode();
-        MethodBuilder implementation = new MethodBuilder()
-                .addModifier("public")
-                .setReturnType(returnType)
-                .setIdentifier(method.getIdentifier());
-        CodeBuilder delegateCall = new CodeBuilder()
-                .beginConditional(!returnType.equals("void")).append("return ").endConditional()
-                .append(delegateId)
-                .append(".")
-                .append(method.getIdentifier())
-                .append("(")
-                .beginDelimiter(", ");
-        method.getParameters().forEach(param -> {
-            implementation.addParameter(param);
-            delegateCall.append(param.getArgId());
-        });
-
-        delegateCall.endDelimiter().append(");");
-        return implementation.addStatement(delegateCall);
-    }
-
-    private static class MethodSignature {
-        private final String identifier;
-        private final List<Parameter> parameters;
-
-        MethodSignature(MethodBuilder source) {
-            identifier = source.getIdentifier().toCode();
-            parameters = List.copyOf(source.getParameters());
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            MethodSignature that = (MethodSignature) o;
-            return Objects.equals(identifier, that.identifier) && Objects.equals(parameters, that.parameters);
-        }
-        @Override
-        public int hashCode() {
-            return Objects.hash(identifier, parameters);
         }
     }
 
