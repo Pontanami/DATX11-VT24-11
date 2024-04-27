@@ -6,12 +6,13 @@ import grammar.gen.ConfluxParserVisitor;
 import java_builder.ClassBuilder;
 import java_builder.Code;
 import java_builder.MethodBuilder;
+import org.antlr.v4.runtime.misc.Pair;
 import transpiler.Environment;
 import transpiler.TranspilerException;
 import transpiler.TranspilerState;
+import transpiler.tasks.AssertImmutableTask;
 import transpiler.tasks.TaskQueue;
 import transpiler.tasks.TranspilerTask;
-
 import java.util.List;
 
 public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
@@ -19,6 +20,7 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
     private ClassBuilder genClass;
     private final TaskQueue taskQueue;
     private String interfaceId;
+    private boolean isImmutable = false;
 
     private final ConfluxParserVisitor<Code> sT;
     public ClassTranspiler(TaskQueue _taskQueue, ConfluxParserVisitor<Code> statementTranspiler) {
@@ -30,11 +32,20 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
     public Void visitTypeDeclaration(ConfluxParser.TypeDeclarationContext ctx) {
         interfaceId = ctx.Identifier().getText();
         genClass = new ClassBuilder();
-        taskQueue.addTask(TaskQueue.Priority.ADD_CLASS, new ClassTask(genClass));
+        taskQueue.addTask(TaskQueue.Priority.ADD_CLASS, new ClassTask(genClass, interfaceId));
         String typeId = ctx.Identifier().toString();
         genClass.addImplementedInterface(typeId);
         genClass.addModifier("public");
         genClass.setIdentifier(Environment.classId(typeId));
+
+        //Immutable check
+        if(ctx.typeModifier() != null) {
+            if(ctx.typeModifier().IMMUTABLE() != null) {
+                taskQueue.addTask(TaskQueue.Priority.CHECK_IMMUTABLE, new AssertImmutableTask(interfaceId));
+                isImmutable = true;
+            }
+        }
+
         return visitChildren(ctx);
     }
 
@@ -48,7 +59,7 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
             MethodBuilder mB = new MethodBuilder(true).addModifier("public");
             MethodTranspiler mT = new MethodTranspiler(mB, sT);
             method.accept(mT);
-            if(checkMethodExist(mT.mb.getIdentifier().toString())){
+            if(checkMethodExist(mT.mb)){
                 throw new TranspilerException("Duplicate method id: " + mT.mb.getIdentifier());
             }
             else{
@@ -63,89 +74,69 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
         if(ctx.attributeDeclaration() == null){
          return null;
         }
-        //Hela detta är temp, i väntan på attributeTranspiler
+
         List<ConfluxParser.AttributeDeclarationContext> attributedDeclarations = ctx.attributeDeclaration();
         for(ConfluxParser.AttributeDeclarationContext aD : attributedDeclarations){
-            ConfluxParser.DeclarationContext attribute = aD.declaration();
-            if (attribute.VAR() != null) {
-                AddVariableAttribute(attribute.declarationPart(0).Identifier().getText(), attribute.type().getText());
-            } else {
-                AddAttribute(attribute.declarationPart(0).Identifier().getText(), attribute.type().getText());
+            String field = aD.accept(new AttributeTranspiler());
+            if(isImmutable && !field.contains("final")) {
+               throw new TranspilerException("Immutable type " + interfaceId +  " cannot have mutable fields");
             }
+             genClass.addField(field);
 
             if(aD.AS() == null) {
                 continue;
             }
             //Generate getter method
-            String methodId = aD.Identifier().toString();
-            String returnType = aD.declaration().type().getText();
-            MethodBuilder mB = new MethodBuilder(true);
-            mB.addModifier("public");
-            mB.setIdentifier(methodId);
-            mB.setReturnType(returnType);
-            mB.addStatement("return this." + aD.declaration().declarationPart(0).Identifier() + ";");
-            taskQueue.addTask(TaskQueue.Priority.ADD_GETTER, state -> {
-                boolean found = false;
-                for (MethodBuilder m : state.lookupInterface(interfaceId).getMethods()) {
-                    if (m.signatureEquals(mB)) {
-                        found = true;
-                    }
-                }
-                if (!found) {
-                    throw new TranspilerException("Getter method not present in interface");
-                }
-            } );
-            if (checkMethodExist(mB.getIdentifier().toString())) {
+            MethodBuilder mB = generateGetter(aD);
+            if (checkMethodExist(mB)) {
                 throw new TranspilerException("Duplicate method id: " + mB.getIdentifier());
             } else {
                 genClass.addMethod(mB);
             }
-
-
         }
 
 
         return visitChildren(ctx);
     }
 
+    private MethodBuilder generateGetter(ConfluxParser.AttributeDeclarationContext aD) {
+        String methodId = aD.Identifier().toString();
+        String returnType = aD.declaration().type().getText();
+        MethodBuilder mB = new MethodBuilder(true);
+        mB.addModifier("public");
+        mB.setIdentifier(methodId);
+        mB.setReturnType(returnType);
+        mB.addStatement("return this." + aD.declaration().declarationPart(0).Identifier() + ";");
+        taskQueue.addTask(TaskQueue.Priority.ADD_GETTER, state -> {
+            boolean found = false;
+            for (MethodBuilder m : state.lookupInterface(interfaceId).getMethods()) {
+                if (m.signatureEquals(mB)) {
+                    found = true;
+                }
+            }
+            if (!found) {
+                throw new TranspilerException("Getter method not present in interface");
+            }
+        } );
+        return mB;
+    }
+
     @Override
     public Void visitComponentsBlock(ConfluxParser.ComponentsBlockContext ctx){
-        /*
-        if(ctx.componentsDeclaration() != null){
-            List<ConfluxParser.ComponentsDeclarationContext> components = ctx.componentsDeclaration();
-            for(ConfluxParser.ComponentsDeclarationContext component : components){
-                String id = " ";
-              if(component.aggregateDeclaration() != null){
-                  id = component.aggregateDeclaration().declarationNoAssign().Identifier().toString();
-                  String type = component.aggregateDeclaration().declarationNoAssign().type().getText();
-                  AddAttribute(id, type);
-              }
-              else if(component.compositeDeclaration() != null){
-                  //TODO fix [] problem elsewhere
-                  id = component.compositeDeclaration().declaration().declarationPart(0).Identifier().toString();
-                  String type = component.compositeDeclaration().declaration().type().getText();
-                  AddAttribute(id, type);
-              }
-            }
-        }*/
-        //String s = ComponentsTranspiler.visitComponentsBlock(ctx).toCode();
-        for (ComponentLine component : ComponentsTranspiler.visitComponentsBlock(ctx))
-            genClass.addField("private final " + component.component.toCode() + ";");
+        for (Pair<String, List<MethodBuilder>> component : ComponentsTranspiler.visitComponentsBlock(ctx)) {
+            genClass.addField("private final " + component.a + ";");
+            if(!component.b.isEmpty())
+                for (MethodBuilder mb : component.b) {
+                    genClass.addMethod(mb);
+                }
+        }
+
         return visitChildren(ctx);
     }
-
-    private void AddAttribute(String Identifier, String type){
-        genClass.addField("private final " + type + " " + Identifier.toLowerCase() + ";");
-    }
-
-    private void AddVariableAttribute(String Identifier, String type){
-        genClass.addField("private " + type + " " + Identifier.toLowerCase() + ";");
-    }
-
-    private Boolean checkMethodExist(String methodId){
+    private Boolean checkMethodExist(MethodBuilder methodBuilder){
         List<MethodBuilder> methods = genClass.getMethods();
         for(MethodBuilder method : methods){
-            if(method.getIdentifier().toString().equals(methodId)){
+            if(method.signatureEquals(methodBuilder)){
                 return true;
             }
         }
@@ -154,15 +145,30 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
     }
     private static class ClassTask implements TranspilerTask {
         private final ClassBuilder genClass;
+        private final String interfaceId;
 
-        private ClassTask(ClassBuilder genClass) { this.genClass = genClass; }
-
+        private ClassTask(ClassBuilder genClass, String id) { this.genClass = genClass; this.interfaceId = id; }
         @Override
         public void run(TranspilerState state) {
-            //Build class?
-            if(state.doesJavaIdExist(genClass.getIdentifier().toString())){
+
+            if(state.doesJavaIdExist(genClass.getIdentifier().toCode())){
                 throw new TranspilerException("Duplicate type id: " + genClass.getIdentifier());
             }
+
+            if(state.lookupInterface(interfaceId) == null) {
+                throw new TranspilerException("No interface found for type: " + interfaceId);
+            }
+
+            //Cross-checking the methods in the interface with the methods in the class to add in the correct return
+            // type for the component method
+            List<MethodBuilder> methods = state.lookupInterface(interfaceId).getMethods();
+            List<MethodBuilder> typeMethods = genClass.getMethods();
+            methods.forEach(m -> typeMethods.forEach(t -> {
+                if(m.signatureEquals(t) && t.getReturnType() == null){
+                    t.setReturnType(m.getReturnType());
+                    t.addModifier("public");
+                }
+            }));
             state.addClass(genClass);
         }
     }

@@ -1,39 +1,75 @@
 package transpiler.visitors;
 
 import grammar.gen.ConfluxParser;
+import java_builder.MethodBuilder;
+import org.antlr.v4.runtime.tree.TerminalNode;
+
+import java.util.List;
+import java.util.Objects;
+
 
 public class AttributeTranspiler extends DefaultTranspiler {
 
     @Override
-    public String visitAttributesBlock(ConfluxParser.AttributesBlockContext ctx) {
+    public String visitAttributeDeclaration(ConfluxParser.AttributeDeclarationContext ctx) {
+
+        return generateAttribute(ctx);
+    }
+
+    private String generateAttribute(ConfluxParser.AttributeDeclarationContext ctx) {
         StringBuilder result = new StringBuilder();
 
-        // Visit each attribute in the attributes block and transpile
-        for (ConfluxParser.AttributeDeclarationContext declaration : ctx.attributeDeclaration()) {
-            result.append(transpileAttribute(declaration)).append(";\n");
+        constructAttribute(ctx, 0, result);
+        List<TerminalNode> iterations = ctx.declaration().COMMA();
+        for(int i = 1;i<=iterations.size(); i++){
+            constructAttribute(ctx, i, result);
         }
         return result.toString();
     }
 
-    public String transpileAttribute(ConfluxParser.AttributeDeclarationContext declaration) {
+    private void constructAttribute(ConfluxParser.AttributeDeclarationContext ctx, int i, StringBuilder result) {
+        result.append("private ");
+
+        if (ctx.declaration().VAR() == null) {
+            result.append("final ");
+        }
+        result.append(visit(ctx.declaration().type()));
+        result.append(" ").append(visitDeclarationPart(ctx.declaration().declarationPart(i)));
+        if(Objects.equals(ctx.declaration().type().getText(), "float")){result.append("F");}
+        result.append(";").append(" ");
+    }
+
+    private String generateGetter(ConfluxParser.AttributeDeclarationContext ctx) {
+
+        String returnType = visit(ctx.declaration().type());
+        String attributeName = ctx.declaration().declarationPart(0).Identifier().getText();
+        String methodName = ctx.Identifier().getText();
+
+
+        MethodBuilder methodBuilder = new MethodBuilder();
+        methodBuilder.addModifier("private");
+        if (ctx.declaration().VAR() == null) {
+            methodBuilder.addModifier("final");
+        }
+        methodBuilder.setReturnType(returnType);
+        methodBuilder.setIdentifier(methodName);
+        methodBuilder.addStatement("return " + attributeName + ";");
+
+        return methodBuilder.toCode();
+
+    }
+
+    public String visitDeclarationPart(ConfluxParser.DeclarationPartContext ctx) {
         StringBuilder result = new StringBuilder();
+        result.append(ctx.Identifier().getText());
 
-        //if the 'var' keyword is not present, add private final to the attribute
-        if (declaration.declaration().VAR() == null) {
-            result.append("private final ");
+        if (ctx.ASSIGN() != null) {
+            result.append(" = ").append(visit(ctx.expression()));
         }
 
-        //Attributes without assignments
-        if (declaration.declaration() != null) {
-            result.append(visit(declaration.declaration()));
-        }
-
-        //Attributes with assignments
-        else {
-            result.append(visit(declaration.declaration().type())).append(" ")
-                    .append(visit(declaration.declaration().declarationPart(0)));
-        }
         return result.toString();
     }
+
+
 }
 

@@ -39,8 +39,7 @@ public class AssertImmutableTask implements TranspilerTask {
 
             for (TerminalNode node : ctx.typeExtend().Identifier()) {
                 if (node.toString().equals(immutableTypeId)) { // this type extends the immutable type
-                    boolean isImmutable = true; // TODO: replace with check for immutable keyword
-                    if (!isImmutable) {
+                    if (ctx.typeModifier().IMMUTABLE() != null){
                         String id = ctx.Identifier().toString();
                         throw new TranspilerException("Type '" + id + "' isn't immutable but extends an immutable type");
                     } else

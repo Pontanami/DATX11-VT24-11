@@ -14,6 +14,9 @@ literals
 numericType
     : INT
     | FLOAT
+    | SHORT
+    | LONG
+    | DOUBLE
     ;
 
 primitiveType
@@ -58,7 +61,7 @@ aggregateDeclaration : declarationNoAssign handlesClause ;
 
 declarationNoAssign : type (Identifier (COMMA Identifier)*) ;
 
-handlesClause : (HANDLES (delegateMethod (COMMA delegateMethod)*) (AS Identifier)?)? ;
+handlesClause : (HANDLES (delegateMethod (COMMA delegateMethod)*))? ;
 
 delegateMethod : methodId LPAREN variableList? RPAREN renameMethod? ;
 
@@ -111,6 +114,7 @@ javaStatement : expression SEMI
               | returnStatement
               | block
               | BREAK SEMI
+              | CONTINUE SEMI
               ;
 
 observerStatement : publishStatement
@@ -163,6 +167,9 @@ expression: LPAREN expression RPAREN
           | arrayAccess
           | qualifiedIdentifier (INC | DEC)
           | (INC | DEC) qualifiedIdentifier
+          | THIS DOT BASE
+          | THIS
+          | BASE
           | BANG expression
           | <assoc=right> expression CARET expression
           | expression MUL expression
@@ -184,7 +191,7 @@ arrayConstructor : arrayType DOT Identifier LPAREN parameterList? RPAREN ;
 
 arrayAccess : qualifiedIdentifier (LBRACK expression RBRACK)+ ;
 
-qualifiedIdentifier : (BASE DOT)? Identifier (DOT Identifier)*;
+qualifiedIdentifier : (THIS DOT)? (BASE DOT)? Identifier (DOT Identifier)*;
 
 methodChain : methodCall (DOT methodCall)* ;
 

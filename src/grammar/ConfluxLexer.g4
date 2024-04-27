@@ -4,6 +4,10 @@ lexer grammar ConfluxLexer;
 //Types
 INT : 'int' ;
 FLOAT : 'float' ;
+SHORT : 'short' ;
+LONG : 'long' ;
+DOUBLE : 'double' ;
+BYTE : 'byte' ;
 BOOLEAN : 'boolean';
 CHAR : 'char' ;
 STRING : 'String' ;
@@ -24,7 +28,6 @@ DEFAULT : 'default' ;
 SINGLETON : 'singleton' ;
 DECORATOR : 'decorator' ;
 DECORATES : 'decorates' ;
-BASE : 'base' ;
 HANDLES : 'handles' ;
 AS : 'as' ;
 VAR : 'var' ;
@@ -49,6 +52,9 @@ WHILE      : 'while';
 SWITCH     : 'switch';
 CASE       : 'case';
 BREAK      : 'break';
+CONTINUE   : 'continue';
+THIS       : 'this' ;
+BASE       : 'base' ;
 
 NUMBER : SIGN? DIGIT+ ;
 DECIMALNUMBER : SIGN? DIGIT+ [.] DIGIT+ ;

@@ -1,4 +1,0 @@
-int test(int i, String s, bool b1, bool b2, Car delorean, CheeseBurger cb){
-    i = i + 1;
-    return i;
-}

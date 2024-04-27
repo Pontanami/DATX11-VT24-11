@@ -5,8 +5,8 @@ type ComponentDeclaration {
    void renamedMethod2b();
 }
 components {
-   MyComponent c1 = MyComponent1.new() handles componentMethod1a(), componentMethod1b();
-   MyComponent c2 = MyComponent2.new() handles
+   MyComponent1 c1 = MyComponent1.new() handles componentMethod1a(), componentMethod1b();
+   MyComponent2 c2 = MyComponent2.new() handles
       componentMethod2a() as renamedMethod2a,
       componentMethod2b() as renamedMethod2b;
 }
