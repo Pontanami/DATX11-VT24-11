@@ -11,14 +11,14 @@ public class DecoratorTest2 {
     public interface Car {
         void gas();
 
-        void brake(float f);
+        boolean brake(float f);
 
-        default DecoratorTag _addDecorator(_Decorator<Car> decorator) {
+        default DecoratorTag _addDecorator(CarDecorator decorator) {
             throw new UnsupportedOperationException();
         }
 
         static Car _new() {
-            return new _DecoratedCar(_ClassCar._new());
+            return _ClassCar._new();
         }
     }
 
@@ -28,83 +28,103 @@ public class DecoratorTest2 {
             System.out.println("basic car gas");
         }
         @Override
-        public void brake(float f) {
+        public boolean brake(float f) {
             System.out.println("basic car brake");
+            return true;
         }
-        static _ClassCar _new() {
-            return new _ClassCar();
+        static Car _new() {
+            return new _DecoratedCar(new _ClassCar());
         }
     }
 
     interface SportsCar extends Car {
         void turbo();
+
+        static SportsCar _new() {
+            return _ClassSportsCar._new();
+        }
+
+        default DecoratorTag _addDecorator(CarDecorator decorator) {
+            throw new UnsupportedOperationException();
+        }
+
+        default DecoratorTag _addDecorator(SportsCarDecorator decorator) {
+            throw new UnsupportedOperationException();
+        }
     }
 
-    public static class _ClassCarLogger extends _AbstractDecorator<Car> implements Car {
-        private enum _ConstructorId_new { __ }
-        private int callCounter;
-        private final StringBuilder log;
-
-        private _ClassCarLogger(_ConstructorId_new __, StringBuilder theLog) {
-            callCounter = 0;
-            log = theLog;
-        }
-
-        public static _ClassCarLogger _new(StringBuilder theLog) {
-            return new _ClassCarLogger(_ConstructorId_new.__, theLog);
-        }
-
-        public Car _getDecoratedInstance() {
-            return this;
-        }
+    static class _ClassSportsCar implements SportsCar {
+        @Override
         public void gas() {
-            logCall("gas()");
-            _getBase().gas();
+            System.out.println("basic sports car gas");
         }
-        public void brake(float f) {
-            logCall("brake()");
-            _getBase().brake(f);
+        @Override
+        public boolean brake(float f) {
+            System.out.println("basic sports car brake");
+            return true;
         }
-        private void logCall(String methodSig) {
-            callCounter++;
-            log.append("Method call #").append(callCounter).append(": Car.").append(methodSig).append("\n");
+        static SportsCar _new() {
+            return new _DecoratedSportsCar(new _ClassSportsCar());
+        }
+        @Override
+        public void turbo() {
+            System.out.println("basic sports car turbo");
+        }
+    }
+
+    static abstract class CarDecorator extends _AbstractDecorator<Car> implements Car {
+        @Override
+        public void gas() {
+            _getPrevious()._invoke(void.class, "gas");
+        }
+
+        @Override
+        public boolean brake(float f) {
+            return _getPrevious()._invoke(Boolean.class, "brake", new Class[]{float.class}, new Object[]{f});
+        }
+    }
+
+    static abstract class SportsCarDecorator extends _AbstractDecorator<SportsCar> implements SportsCar {
+        @Override
+        public void gas() {
+            _getPrevious()._invoke(void.class, "gas");
+        }
+
+        @Override
+        public boolean brake(float f) {
+            return _getPrevious()._invoke(Boolean.class, "brake", new Class[]{float.class}, new Object[]{f});
+        }
+
+        @Override
+        public void turbo() {
+            _getPrevious()._invoke(void.class, "turbo");
         }
     }
 
     // decorator Muffler1 decorates Car
-    static class _Muffler1 extends _AbstractDecorator<Car> implements Car {
+    static class _Muffler1 extends CarDecorator {
         @Override
-        public Car _getDecoratedInstance() {
-            return this;
-        }
-
-        @Override
-        public void gas() {
-            _getBase().gas();
-        }
-
-        @Override
-        public void brake(float f) {
-            _getBase().brake(f);
-            System.out.println("Muffler1.brake()");
+        public boolean brake(float f) {
+            boolean brakeResult = super.brake(f);
+            System.out.println("Muffler1.brake custom behavior");
+            return brakeResult;
         }
     }
 
-    static class _Muffler2 extends _AbstractDecorator<Car> implements Car {
+    static class _Muffler2 extends CarDecorator {
         @Override
-        public Car _getDecoratedInstance() {
-            return this;
+        public boolean brake(float f) {
+            boolean brakeResult = super.brake(f);
+            System.out.println("Muffler2.brake custom behavior");
+            return brakeResult;
         }
+    }
 
+    static class SportsCarMuffler extends SportsCarDecorator {
         @Override
-        public void gas() {
-            _getBase().gas();
-        }
-
-        @Override
-        public void brake(float f) {
-            _getBase().brake(f);
-            System.out.println("Muffler2.brake()");
+        public void turbo() {
+            super.turbo();
+            System.out.println("SportsCarMuffler.turbo custom behavior");
         }
     }
 
@@ -117,24 +137,69 @@ public class DecoratorTest2 {
 
         @Override
         public void gas() {
-            decoratorHandler.getTopLevelDecorator().gas();
+            decoratorHandler.callTopDecorator(void.class, "gas", new Class[]{}, new Object[]{});
         }
 
         @Override
-        public void brake(float f) {
-            decoratorHandler.getTopLevelDecorator().brake(f);
+        public boolean brake(float f) {
+            return decoratorHandler.callTopDecorator(Boolean.class, "brake", new Class[]{float.class}, new Object[]{f});
         }
 
         @Override
-        public DecoratorTag _addDecorator(_Decorator<Car> decorator) {
+        public DecoratorTag _addDecorator(CarDecorator decorator) {
             return decoratorHandler.addDecorator(decorator);
         }
     }
 
+    static final class _DecoratedSportsCar implements SportsCar {
+        private final _DecoratorHandler<SportsCar> decoratorHandler;
+
+        _DecoratedSportsCar(SportsCar base) {
+            decoratorHandler = new _DecoratorHandler<>(base);
+        }
+
+        @Override
+        public void gas() {
+            decoratorHandler.callTopDecorator(void.class, "gas", new Class[]{}, new Object[]{});
+        }
+
+        @Override
+        public boolean brake(float f) {
+            return decoratorHandler.callTopDecorator(Boolean.class, "brake", new Class[]{float.class}, new Object[]{f});
+        }
+
+        @Override
+        public void turbo() {
+            decoratorHandler.callTopDecorator(void.class, "turbo", new Class[]{}, new Object[]{});
+        }
+
+        @Override
+        public DecoratorTag _addDecorator(CarDecorator decorator) {
+            return decoratorHandler.addDecorator(decorator);
+        }
+
+        @Override
+        public DecoratorTag _addDecorator(SportsCarDecorator decorator) {
+            return decoratorHandler.addDecorator(decorator);
+        }
+    }
+
+    interface CanBeDecorated {}
+
+
     public static void main(String[] args) {
-        StringBuilder log = new StringBuilder();
+        /*
+        type Car {...} ...
+        type SportsCar extends Car {...} ...
+        decorator CarDecorator decorates Car ...
+
+        SportsCar car1 = SportsCar.new();
+        Car car2 = car1;
+        car2 add decorator CarDecorator.new();
+         */
+
+
         Car car = Car._new();
-        car._addDecorator(_ClassCarLogger._new(log));
 
         System.out.println();
         System.out.println("------- basic car -----------");
@@ -160,9 +225,5 @@ public class DecoratorTest2 {
         muffler2.deleteDecorator();
         car.gas();
         car.brake(0);
-
-        System.out.println();
-        System.out.println("--------------- log ----------------");
-        System.out.println(log);
     }
 }

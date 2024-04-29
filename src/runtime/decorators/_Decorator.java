@@ -1,13 +1,18 @@
 package runtime.decorators;
 
 public interface _Decorator<T> {
-    T _getDecoratedInstance();
 
-    void _setNext(_Decorator<T> next);
+    void _setNext(_Decorator<?> next);
 
-    _Decorator<T> _getNext();
+    _Decorator<?> _getNext();
 
-    _Decorator<T> _getPrevious();
+    _Decorator<?> _getPrevious();
 
-    void _setPrevious(_Decorator<T> previous);
+    void _setPrevious(_Decorator<?> previous);
+
+    <R> R _invoke(Class<R> returnType, String methodName, Class<?>[] argTypes, Object[] args);
+
+    default <R> R _invoke(Class<R> returnType, String methodName) {
+        return _invoke(returnType, methodName, new Class[]{}, new Object[]{});
+    }
 }

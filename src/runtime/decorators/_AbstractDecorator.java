@@ -1,25 +1,36 @@
 package runtime.decorators;
 
-public abstract class _AbstractDecorator<T> implements _Decorator<T> {
-    private _Decorator<T> previous;
-    private _Decorator<T> next;
+import java.lang.reflect.InvocationTargetException;
+import java.util.Arrays;
 
-    protected final T _getBase() {
-        if (previous == null) {
-            throw new IllegalStateException("Cannot get base: this decorator doesn't decorate an object");
+public abstract class _AbstractDecorator<T> implements _Decorator<T> {
+    private _Decorator<?> previous;
+    private _Decorator<?> next;
+
+    public <R> R _invoke(Class<R> returnType, String methodName, Class<?>[] argTypes, Object[] args) {
+        try {
+            return returnType.cast(getClass().getMethod(methodName, argTypes).invoke(this, args));
+        } catch (InvocationTargetException e) {
+            throw new RuntimeException(e.getTargetException());
+        } catch (IllegalAccessException e) {
+            throw new AssertionError("This is unreachable - getMethod only returns public methods");
+        } catch (NoSuchMethodException e) {
+            // Method didn't exist on this decorator, forward the call to the previous decorator
+            assert previous != null : "The first decorator in the chain is missing the requested method: "
+                                      + methodName + Arrays.toString(argTypes);
+            return previous._invoke(returnType, methodName, argTypes, args);
         }
-        return previous._getDecoratedInstance();
     }
 
     @Override
-    public final _Decorator<T> _getPrevious() { return previous; }
+    public final _Decorator<?> _getPrevious() { return previous; }
 
     @Override
-    public final void _setPrevious(_Decorator<T> previous) { this.previous = previous; }
+    public final void _setPrevious(_Decorator<?> previous) { this.previous = previous; }
 
     @Override
-    public final _Decorator<T> _getNext() { return next; }
+    public final _Decorator<?> _getNext() { return next; }
 
     @Override
-    public final void _setNext(_Decorator<T> next) { this.next = next; }
+    public final void _setNext(_Decorator<?> next) { this.next = next; }
 }
