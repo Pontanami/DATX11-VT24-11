@@ -77,10 +77,7 @@ public class ExpressionTranspiler extends DefaultTranspiler {
     }
 
     @Override
-    public String visitTerminal(TerminalNode node) {
-        if (node.getSymbol().getType() == ConfluxLexer.BASE) {
-            return decoratorTranspiler.visitTerminal(node);
-        }
-        return super.visitTerminal(node);
+    public String visitBaseCall(ConfluxParser.BaseCallContext ctx) {
+        return decoratorTranspiler.visitBaseCall(ctx);
     }
 }

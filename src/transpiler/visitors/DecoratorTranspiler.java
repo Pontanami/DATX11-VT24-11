@@ -7,6 +7,7 @@ import grammar.gen.ConfluxParserBaseVisitor;
 import grammar.gen.ConfluxParserVisitor;
 import java_builder.*;
 import java_builder.MethodBuilder.MethodSignature;
+import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import transpiler.Environment;
 import transpiler.TranspilerException;
@@ -14,6 +15,8 @@ import transpiler.TranspilerState;
 import transpiler.tasks.TaskQueue;
 import transpiler.tasks.TranspilerTask;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -29,7 +32,6 @@ public class DecoratorTranspiler extends ConfluxParserBaseVisitor<String> {
     private static final String DECORATOR_HANDLER_VAR_ID = Environment.reservedId("decoratorHandler");
     private static final String HANDLER_ADD_DECORATOR = "addDecorator";
     private static final String HANDLER_GET_DECORATED = "getTopLevelDecorator";
-    private static final String BASE = Environment.reservedId("getBase");
 
     private final TaskQueue taskQueue;
     private final ConfluxParserVisitor<Code> stmTranspiler;
@@ -136,16 +138,33 @@ public class DecoratorTranspiler extends ConfluxParserBaseVisitor<String> {
     }
 
     @Override
-    public String visitDecoratorId(ConfluxParser.DecoratorIdContext ctx) {
+    public String visitDecoratorId(DecoratorIdContext ctx) {
         return Environment.classId(ctx.getText()); //Make the constructor 'visible' from the Conflux source
     }
 
     @Override
-    public String visitTerminal(TerminalNode node) {
-        if (node.getSymbol().getType() == ConfluxLexer.BASE) {
-            return BASE + "()";
+    public String visitBaseCall(BaseCallContext ctx) {
+        validateBaseCall(ctx);
+        CodeBuilder result = new CodeBuilder().append("super.").append(ctx.Identifier().getText())
+                                              .append("(").beginDelimiter(", ");
+        if (ctx.parameterList() == null) {
+            for (ExpressionContext eCtx : ctx.parameterList().expression()) {
+                result.append(expressionTranspiler.visitExpression(eCtx));
+            }
         }
-        return expressionTranspiler.visitTerminal(node);
+        return result.endDelimiter().append(")").toCode();
+    }
+
+    private void validateBaseCall(BaseCallContext ctx) {
+        ParserRuleContext parent = ctx.getParent();
+        while (parent != null) {
+            if (parent instanceof DecoratorDeclarationContext) {
+                return;
+            }
+            parent = parent.getParent();
+        }
+        throw new TranspilerException("Illegal reference to base: keyword 'base' can only be " +
+                                      "used inside a decorator declaration");
     }
 
     @Override

@@ -27,6 +27,12 @@ public class DecoratorTest2 {
         public void gas() {
             System.out.println("basic car gas");
         }
+
+        Object test() {
+
+            return super.equals(this);
+        }
+
         @Override
         public boolean brake(float f) {
             System.out.println("basic car brake");
@@ -72,7 +78,7 @@ public class DecoratorTest2 {
         }
     }
 
-    static abstract class CarDecorator extends _AbstractDecorator<Car> implements Car {
+    public static abstract class CarDecorator extends _AbstractDecorator implements Car {
         @Override
         public void gas() {
             _getPrevious()._invoke(void.class, "gas");
@@ -84,7 +90,7 @@ public class DecoratorTest2 {
         }
     }
 
-    static abstract class SportsCarDecorator extends _AbstractDecorator<SportsCar> implements SportsCar {
+    public static abstract class SportsCarDecorator extends _AbstractDecorator implements SportsCar {
         @Override
         public void gas() {
             _getPrevious()._invoke(void.class, "gas");
@@ -102,16 +108,20 @@ public class DecoratorTest2 {
     }
 
     // decorator Muffler1 decorates Car
-    static class _Muffler1 extends CarDecorator {
+    public static class _Muffler1 extends CarDecorator {
+        public static _Muffler1 _new() { return new _Muffler1(); }
+
         @Override
         public boolean brake(float f) {
-            boolean brakeResult = super.brake(f);
+            boolean brakeResult = super.brake(f); // boolean brakeResult = base.brake(f);
             System.out.println("Muffler1.brake custom behavior");
             return brakeResult;
         }
     }
 
     static class _Muffler2 extends CarDecorator {
+        public static _Muffler2 _new() { return new _Muffler2(); }
+
         @Override
         public boolean brake(float f) {
             boolean brakeResult = super.brake(f);
@@ -129,25 +139,25 @@ public class DecoratorTest2 {
     }
 
     static final class _DecoratedCar implements Car {
-        private final _DecoratorHandler<Car> decoratorHandler;
+        private final _DecoratorHandler<Car> _decoratorHandler;
 
         _DecoratedCar(Car base) {
-            decoratorHandler = new _DecoratorHandler<>(base);
+            _decoratorHandler = new _DecoratorHandler<>(base);
         }
 
         @Override
         public void gas() {
-            decoratorHandler.callTopDecorator(void.class, "gas", new Class[]{}, new Object[]{});
+            _decoratorHandler.callTopDecorator(void.class, "gas", new Class[0], new Object[0]);
         }
 
         @Override
         public boolean brake(float f) {
-            return decoratorHandler.callTopDecorator(Boolean.class, "brake", new Class[]{float.class}, new Object[]{f});
+            return _decoratorHandler.callTopDecorator(Boolean.class, "brake", new Class[]{float.class}, new Object[]{f});
         }
 
         @Override
         public DecoratorTag _addDecorator(CarDecorator decorator) {
-            return decoratorHandler.addDecorator(decorator);
+            return _decoratorHandler.addDecorator(decorator);
         }
     }
 
@@ -160,7 +170,7 @@ public class DecoratorTest2 {
 
         @Override
         public void gas() {
-            decoratorHandler.callTopDecorator(void.class, "gas", new Class[]{}, new Object[]{});
+            decoratorHandler.callTopDecorator(void.class, "gas", new Class[0], new Object[0]);
         }
 
         @Override
@@ -170,7 +180,7 @@ public class DecoratorTest2 {
 
         @Override
         public void turbo() {
-            decoratorHandler.callTopDecorator(void.class, "turbo", new Class[]{}, new Object[]{});
+            decoratorHandler.callTopDecorator(void.class, "turbo", new Class[0], new Object[0]);
         }
 
         @Override
@@ -209,8 +219,8 @@ public class DecoratorTest2 {
         System.out.println();
         System.out.println("---------- add muffler x2 ------------");
         // DecoratorTag muffler1 = car add decorator Muffler.new()
-        DecoratorTag muffler1 = car._addDecorator(new _Muffler1());
-        DecoratorTag muffler2 = car._addDecorator(new _Muffler2());
+        DecoratorTag muffler1 = car._addDecorator(_Muffler1._new());
+        DecoratorTag muffler2 = car._addDecorator(_Muffler2._new());
         car.gas();
         car.brake(0);
 

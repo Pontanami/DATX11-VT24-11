@@ -146,15 +146,14 @@ expression: LPAREN expression RPAREN
           | literals
           | qualifiedIdentifier
           | methodChain
+          | baseCall
           | addDecorator
           | addSubscriber
           | arrayConstructor
           | arrayAccess
           | qualifiedIdentifier (INC | DEC)
           | (INC | DEC) qualifiedIdentifier
-          | THIS DOT BASE
           | THIS
-          | BASE
           | BANG expression
           | <assoc=right> expression CARET expression
           | expression MUL expression
@@ -176,11 +175,13 @@ arrayConstructor : arrayType DOT Identifier LPAREN parameterList? RPAREN ;
 
 arrayAccess : qualifiedIdentifier (LBRACK expression RBRACK)+ ;
 
-qualifiedIdentifier : (THIS DOT)? (BASE DOT)? Identifier (DOT Identifier)*;
+qualifiedIdentifier : (THIS DOT)? Identifier (DOT Identifier)*;
 
-methodChain : methodCall (DOT methodCall)* ;
+methodChain : (baseCall | methodCall) (DOT methodCall)* ;
 
 methodCall : qualifiedIdentifier LPAREN parameterList? RPAREN;
+
+baseCall : BASE DOT Identifier LPAREN parameterList? RPAREN;
 
 addSubscriber : publisherExpression ADD SUBSCRIBER subscriberExpression
                 COLONCOLON subscriberCallback explicitEventTypes?;
