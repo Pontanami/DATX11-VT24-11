@@ -46,7 +46,7 @@ public class ObserverTranspiler extends ConfluxParserBaseVisitor<String> {
 
     @Override
     public String visitTypePublishes(TypePublishesContext ctx) {
-        List<String> eventTypes = ctx.type().stream().map(ObserverTranspiler::autobox).toList();
+        List<String> eventTypes = ctx.type().stream().map(TypeContext::getText).map(Environment::boxedId).toList();
 
         taskQueue.addTask(Priority.MAKE_OBSERVER_INTERFACES, new PublisherInterfaceTask(typeId, eventTypes));
         taskQueue.addTask(Priority.MAKE_OBSERVER_INTERFACES, new CallbackInterfaceTask(eventTypes));
@@ -77,14 +77,15 @@ public class ObserverTranspiler extends ConfluxParserBaseVisitor<String> {
         if (ctx.explicitEventTypes() == null) {
             return addSubscriberCall(publisher, subscriber, callback, null);
         } else if (ctx.explicitEventTypes().type().size() == 1) {
-            String eventType = autobox(ctx.explicitEventTypes().type().get(0));
+            String eventType = Environment.boxedId(ctx.explicitEventTypes().type().get(0).getText());
             return addSubscriberCall(publisher, subscriber, callback, eventType);
         } else {
             CodeBuilder builder = new CodeBuilder()
                     .append("new ").append(COMPOSITE_TAG_TYPE_ID).append("(").beginDelimiter(", ");
-            ctx.explicitEventTypes().type().forEach(t ->
-                    builder.append(addSubscriberCall(publisher, subscriber, callback, autobox(t)))
-            );
+            ctx.explicitEventTypes().type().forEach(type -> {
+                String eventType = Environment.boxedId(type.getText());
+                builder.append(addSubscriberCall(publisher, subscriber, callback, eventType));
+            });
             return builder.endDelimiter().append(")").toCode();
         }
     }
@@ -107,20 +108,7 @@ public class ObserverTranspiler extends ConfluxParserBaseVisitor<String> {
 
     @Override
     public String visitExplicitEventType(ExplicitEventTypeContext ctx) {
-        return ctx == null ? null : autobox(ctx.type());
-    }
-
-    private static String autobox(TypeContext ctx) {
-        String type = ctx.getText();
-        return switch (type) {
-            case "byte" -> "Byte";
-            case "short" -> "Short";
-            case "int" -> "Integer";
-            case "long" -> "Long";
-            case "float" -> "Float";
-            case "double" -> "Double";
-            default -> type;
-        };
+        return ctx == null ? null : Environment.boxedId(ctx.type().getText());
     }
 
     // Create the name of the event handler instance variable that the publisher uses

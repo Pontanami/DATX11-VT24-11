@@ -50,7 +50,7 @@ public class PopulateExtendedInterfacesTask implements TranspilerTask {
         }
     }
 
-    private HashSet<MethodSignature> methodSet(InterfaceBuilder builder) {
+    private Set<MethodSignature> methodSet(InterfaceBuilder builder) {
         return builder.getMethods()
                       .stream()
                       .map(MethodBuilder::getSignature)

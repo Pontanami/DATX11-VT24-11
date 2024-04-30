@@ -65,8 +65,10 @@ public class StartVisitor extends ConfluxParserBaseVisitor<Void> {
         if (generateClass) {
             ctx.accept(classTranspiler);
             ctx.accept(constructorTranspiler);
-            ctx.accept(decoratorTranspiler); // Generate decorator wrapper class
         }
+        decoratorTranspiler.setGenerateClass(generateClass);
+        ctx.accept(decoratorTranspiler);
+
         if (ctx.typeBody().mainBlock() != null) {
             visitMainBlock(ctx.typeBody().mainBlock());
         }

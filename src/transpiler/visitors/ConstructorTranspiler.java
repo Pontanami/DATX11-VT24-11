@@ -83,13 +83,13 @@ public class ConstructorTranspiler extends ConfluxParserBaseVisitor<Void> {
         }
         classId = Environment.classId(classId);
         if (conBlock == null || conBlock.constructorDeclaration().isEmpty()) {
-            var task = new AddConstructorsTask(typeId, classId, makeDefaultConstructor(List.of()), false, canBeDecorated);
+            var task = new AddConstructorsTask(typeId, classId, makeDefaultConstructor(List.of()), false, false);
             taskQueue.addTask(Priority.MAKE_CONSTRUCTORS, task);
         } else {
             for (ConstructorDeclarationContext declaration : conBlock.constructorDeclaration()) {
                 ConstructorVisitor visitor = new ConstructorVisitor();
                 declaration.accept(visitor);
-                var task = new AddConstructorsTask(typeId, classId, visitor.constructor, false, canBeDecorated);
+                var task = new AddConstructorsTask(typeId, classId, visitor.constructor, false, false);
                 taskQueue.addTask(Priority.MAKE_CONSTRUCTORS, task);
             }
         }

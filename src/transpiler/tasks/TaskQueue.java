@@ -1,7 +1,6 @@
 package transpiler.tasks;
 
 import transpiler.TranspilerState;
-import transpiler.tasks.TranspilerTask;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,10 +19,10 @@ public class TaskQueue {
         CHECK_IMMUTABLE,
         MAKE_CONSTRUCTORS,
         MAKE_OBSERVER_INTERFACES,
+        ENABLE_TYPE_DECORATION,
         POPULATE_INTERFACES,
         MAKE_OBSERVER_CLASSES,
-        MAKE_DECORATORS,
-        MAKE_DECORATOR_WRAPPER
+        MAKE_DECORATOR_CLASSES
     }
 
     private final TreeMap<Priority, List<TranspilerTask>> tasks = new TreeMap<>();

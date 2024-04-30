@@ -5,6 +5,19 @@ import java.util.Set;
 // Global constants for the transpiler
 public class Environment {
 
+    // convert primitive types to their boxed equivalent
+    public static String boxedId(String id) {
+        return switch (id) {
+            case "byte" -> "Byte";
+            case "short" -> "Short";
+            case "int" -> "Integer";
+            case "long" -> "Long";
+            case "float" -> "Float";
+            case "double" -> "Double";
+            default -> id;
+        };
+    }
+
     // Create an identifier that can't be defined in the source language to avoid name conflicts
     public static String reservedId(String source) {
         return "_" + source;

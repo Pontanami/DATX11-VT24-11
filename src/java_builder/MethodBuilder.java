@@ -8,8 +8,8 @@ import static java_builder.Code.fromString;
 
 /**
  * Builder for java methods. All the 'setter' methods in this class returns the instance for chaining. All methods in
- * this class throw an {@link IllegalArgumentException} for null parameters. The toCode method requires the identifier
- * to be set before the call, otherwise an {@link IllegalStateException} will be thrown.
+ * this class throw an {@link IllegalArgumentException} for null parameters unless otherwise specified. The toCode
+ * method requires the identifier to be set before the call, otherwise an {@link IllegalStateException} will be thrown.
  */
 public class MethodBuilder implements Code {
     private Code returnType;
@@ -162,24 +162,41 @@ public class MethodBuilder implements Code {
     }
 
     /**
-     * Create a 'delegate' method from this method.
+     * Create a 'delegate' method from this method. Where the method id for delegate is the same as this method.
+     * Any modifier on this method will be copied to the returned method.
      * @param delegateId the identifier for the object which handles the method implementation
      * @return a method with the same signature and modifiers as this method, containing a single statement which
      * forwards the call to {@code delegateId}. If this method is subsequently modified, the modifications will not be
      * reflected in the returned method.
      */
     public MethodBuilder delegateMethod(String delegateId) {
+        return delegateMethod(delegateId, null, true);
+    }
+
+    /**
+     * Create a 'delegate' method from this method.
+     * @param delegateId the identifier for the object which handles the method implementation
+     * @param delegateMethodId the identifier of the method of the delegate that will handle the call, if null
+     *                         the same identifier as this method is used
+     * @param copyModifiers if true, the returned method will contain the same modifiers as this method
+     * @return a method with the same signature, containing a single statement which forwards the call to
+     * {@code delegateId}. If this method is subsequently modified, the modifications will not be reflected in the
+     * returned method.
+     */
+    public MethodBuilder delegateMethod(String delegateId, String delegateMethodId, boolean copyModifiers) {
         String returnType = this.returnType.toCode();
         String identifier = this.identifier.toCode();
         MethodBuilder implementation = new MethodBuilder()
                 .setReturnType(returnType)
                 .setIdentifier(identifier);
-        modifiers.forEach(m -> implementation.addModifier(m.toCode()));
+        if (copyModifiers) {
+            modifiers.forEach(m -> implementation.addModifier(m.toCode()));
+        }
         CodeBuilder delegateCall = new CodeBuilder()
                 .beginConditional(!returnType.equals("void")).append("return ").endConditional()
                 .append(delegateId)
                 .append(".")
-                .append(identifier)
+                .append(delegateMethodId == null ? identifier : delegateMethodId)
                 .append("(")
                 .beginDelimiter(", ");
         parameters.forEach(param -> {
