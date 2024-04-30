@@ -1,11 +1,11 @@
 package runtime.decorators;
 
-// manages a chain of decorators on an object of type T
-public final class _DecoratorHandler<T> {
+// manages a chain of decorators on an object
+public final class _DecoratorHandler {
     private _Decorator decorator;
 
-    public _DecoratorHandler(T base) {
-        this.decorator = new _IdentityDecorator<>(base);
+    public _DecoratorHandler(Object base) {
+        this.decorator = new _IdentityDecorator(base);
     }
 
     public <R> R callTopDecorator(Class<R> returnType, String methodName, Class<?>[] argTypes, Object[] args) {

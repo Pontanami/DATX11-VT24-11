@@ -254,14 +254,14 @@ public class DecoratorTranspiler extends ConfluxParserBaseVisitor<String> {
         private Code makeHandlerField() {
             return new CodeBuilder()
                     .append("private final ")
-                    .append(DECORATOR_HANDLER_TYPE_ID).append("<").append(wrappedTypeId).append("> ")
+                    .append(DECORATOR_HANDLER_TYPE_ID).append(" ")
                     .append(DECORATOR_HANDLER_VAR_ID).append(";");
         }
 
         private MethodBuilder makeConstructor() {
             CodeBuilder stm = new CodeBuilder()
                     .append(DECORATOR_HANDLER_VAR_ID).append(" = new ")
-                    .append(DECORATOR_HANDLER_TYPE_ID).append("<>(base);");
+                    .append(DECORATOR_HANDLER_TYPE_ID).append("(base);");
             return new MethodBuilder()
                     .setIdentifier(Environment.decoratorWrapperId(wrappedTypeId))
                     .addParameter(wrappedTypeId, "base")

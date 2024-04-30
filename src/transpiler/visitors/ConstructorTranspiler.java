@@ -30,20 +30,10 @@ public class ConstructorTranspiler extends ConfluxParserBaseVisitor<Void> {
     public Void visitTypeDeclaration(TypeDeclarationContext ctx) {
         typeId = ctx.Identifier().getText();
         classId = Environment.classId(typeId);
-        canBeDecorated = true;
-        if (ctx.typeModifier() != null) {
-            visitChildren(ctx.typeModifier());
-        }
+        canBeDecorated = true; //TODO decide if this is always true
         return ctx.typeBody() == null ? null : visitTypeBody(ctx.typeBody());
     }
 
-    @Override
-    public Void visitTerminal(TerminalNode node) {
-        if (node.getSymbol().getType() == ConfluxLexer.IMMUTABLE) {
-            canBeDecorated = false;
-        }
-        return null;
-    }
     @Override
     public Void visitTypeBody(TypeBodyContext ctx) {
         if (ctx.constructorsBlock() == null || ctx.constructorsBlock().constructorDeclaration().isEmpty()) {

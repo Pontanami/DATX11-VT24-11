@@ -1,7 +1,6 @@
 package runtime.decorators;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.Arrays;
 
 public abstract class _AbstractDecorator implements _Decorator {
     private _Decorator previous;
@@ -16,8 +15,6 @@ public abstract class _AbstractDecorator implements _Decorator {
             throw new AssertionError("This is unreachable - getMethod only returns public methods");
         } catch (NoSuchMethodException e) {
             // Method didn't exist on this decorator, forward the call to the previous decorator
-            assert previous != null : "The first decorator in the chain is missing the requested method: "
-                                      + methodName + Arrays.toString(argTypes);
             return previous._invoke(returnType, methodName, argTypes, args);
         }
     }

@@ -139,10 +139,10 @@ public class DecoratorTest2 {
     }
 
     static final class _DecoratedCar implements Car {
-        private final _DecoratorHandler<Car> _decoratorHandler;
+        private final _DecoratorHandler _decoratorHandler;
 
         _DecoratedCar(Car base) {
-            _decoratorHandler = new _DecoratorHandler<>(base);
+            _decoratorHandler = new _DecoratorHandler(base);
         }
 
         @Override
@@ -162,10 +162,10 @@ public class DecoratorTest2 {
     }
 
     static final class _DecoratedSportsCar implements SportsCar {
-        private final _DecoratorHandler<SportsCar> decoratorHandler;
+        private final _DecoratorHandler decoratorHandler;
 
         _DecoratedSportsCar(SportsCar base) {
-            decoratorHandler = new _DecoratorHandler<>(base);
+            decoratorHandler = new _DecoratorHandler(base);
         }
 
         @Override
