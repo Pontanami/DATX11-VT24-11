@@ -8,7 +8,6 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import transpiler.Environment;
 import transpiler.TranspilerException;
 import transpiler.TranspilerState;
-import transpiler.tasks.AssertDecorableTask;
 import transpiler.tasks.TaskQueue;
 import transpiler.tasks.TranspilerTask;
 
