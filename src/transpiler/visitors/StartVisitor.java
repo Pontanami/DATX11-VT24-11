@@ -2,14 +2,16 @@ package transpiler.visitors;
 
 import grammar.gen.ConfluxParser;
 import grammar.gen.ConfluxParserBaseVisitor;
-import grammar.gen.ConfluxParserVisitor;
-import java_builder.Code;
 import java_builder.MethodBuilder;
 import transpiler.Environment;
 import transpiler.TranspilerException;
 import transpiler.TranspilerState;
+import transpiler.tasks.AssertDecorableTask;
+import transpiler.tasks.AssertImmutableTask;
 import transpiler.tasks.TaskQueue;
 import transpiler.tasks.TranspilerTask;
+
+import java.util.List;
 
 import static grammar.gen.ConfluxParser.*;
 
@@ -30,14 +32,15 @@ public class StartVisitor extends ConfluxParserBaseVisitor<Void> {
         ExpressionTranspiler expTranspiler = new ExpressionTranspiler();
 
         observerTranspiler = new ObserverTranspiler(taskQ);
-        statementTranspiler = new StatementTranspiler(observerTranspiler, expTranspiler);
+        statementTranspiler = new StatementTranspiler(expTranspiler);
         decoratorTranspiler = new DecoratorTranspiler(taskQ, statementTranspiler);
         constructorTranspiler = new ConstructorTranspiler(taskQ, statementTranspiler);
         classTranspiler = new ClassTranspiler(taskQ, statementTranspiler);
         interfaceTranspiler = new InterfaceTranspiler(taskQ, statementTranspiler);
 
         expTranspiler.setDecoratorTranspiler(decoratorTranspiler);
-        expTranspiler.setObserverTranspiler(observerTranspiler);
+        statementTranspiler.setObserverTranspiler(observerTranspiler);
+        statementTranspiler.setDecoratorTranspiler(decoratorTranspiler);
         observerTranspiler.setExpressionTranspiler(expTranspiler);
         decoratorTranspiler.setExpressionTranspiler(expTranspiler);
     }
@@ -57,6 +60,7 @@ public class StartVisitor extends ConfluxParserBaseVisitor<Void> {
         if (!typeId.equals(typeFileName)) {
             throw new TranspilerException("Type identifier must be the same as the file name");
         }
+        validateModifiers(ctx.typeModifier(), typeId);
 
         ctx.accept(interfaceTranspiler);
         ctx.accept(observerTranspiler);
@@ -127,5 +131,23 @@ public class StartVisitor extends ConfluxParserBaseVisitor<Void> {
 
     public void setTypeFileName(String typeFileName) {
         this.typeFileName = typeFileName;
+    }
+
+    private void validateModifiers(List<TypeModifierContext> typeModifiers, String typeId) {
+        int immutable = 0;
+        int decorable = 0;
+        for (TypeModifierContext ctx : typeModifiers) {
+            immutable += ctx.IMMUTABLE() == null ? 0 : 1;
+            decorable += ctx.DECORABLE() == null ? 0 : 1;
+        }
+        if (immutable > 1 || decorable > 1)
+            throw new TranspilerException("Duplicate modifier for type '" + typeId + "'");
+        if (immutable == 1 && decorable == 1) {
+            throw new TranspilerException("Illegal modifier combination 'decorable' and 'immutable'");
+        }
+        if (immutable > 0)
+            taskQ.addTask(TaskQueue.Priority.CHECK_IMMUTABLE, new AssertImmutableTask(typeId));
+        if (decorable > 0)
+            taskQ.addTask(TaskQueue.Priority.CHECK_DECORABLE, new AssertDecorableTask(typeId));
     }
 }

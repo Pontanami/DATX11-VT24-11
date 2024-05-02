@@ -40,8 +40,7 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
 
         //Immutable check
         if(ctx.typeModifier() != null) {
-            if(ctx.typeModifier().IMMUTABLE() != null) {
-                taskQueue.addTask(TaskQueue.Priority.CHECK_IMMUTABLE, new AssertImmutableTask(interfaceId));
+            if(ctx.typeModifier().stream().anyMatch(c -> c.IMMUTABLE() != null)) {
                 isImmutable = true;
             }
         }

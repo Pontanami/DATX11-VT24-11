@@ -10,13 +10,14 @@ import java.util.TreeMap;
 // interface represents the queue for such tasks and contains the enum Priority that defines the order of execution for
 // the different kinds of tasks.
 public class TaskQueue {
-    // The order (from top to bottom) in which to run the tasks
+    // The order (from top/left to bottom/right) in which to run the tasks
     public enum Priority {
         ADD_INTERFACE,
         ADD_CLASS,
         ADD_GETTER,
         ADD_MAIN_CLASS,
         CHECK_IMMUTABLE,
+        CHECK_DECORABLE,
         MAKE_CONSTRUCTORS,
         MAKE_OBSERVER_INTERFACES,
         ENABLE_TYPE_DECORATION,

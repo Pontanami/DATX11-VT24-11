@@ -1,3 +1,3 @@
-type A {
+decorable type A {
    void methodA();
 }

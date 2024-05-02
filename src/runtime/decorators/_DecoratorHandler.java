@@ -12,14 +12,17 @@ public final class _DecoratorHandler {
         return decorator._invoke(returnType, methodName, argTypes, args);
     }
 
-    public DecoratorTag addDecorator(final _Decorator next) {
+    public DecoratorRef addDecorator(Object decoratedObj, _Decorator next) {
         decorator._setNext(next);
         next._setPrevious(decorator);
         decorator = next;
-        return new DecoratorTag(() -> removeDecorator(next));
+        return new DecoratorRef(decoratedObj, decorator);
     }
 
-    private void removeDecorator(_Decorator toRemove) {
+    public void removeDecorator(Object decoratedObject, DecoratorRef ref) {
+        if (decoratedObject != ref._decoratedObject())
+            return;
+        _Decorator toRemove = ref._decorator();
         if (toRemove == decorator) { // the decorator to remove is the last decorator in the chain
             decorator = toRemove._getPrevious();
             decorator._setNext(null);

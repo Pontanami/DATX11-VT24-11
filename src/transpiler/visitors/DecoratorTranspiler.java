@@ -1,6 +1,5 @@
 package transpiler.visitors;
 
-import grammar.gen.ConfluxParser;
 import grammar.gen.ConfluxParser.*;
 import grammar.gen.ConfluxParserBaseVisitor;
 import grammar.gen.ConfluxParserVisitor;
@@ -9,18 +8,23 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import transpiler.Environment;
 import transpiler.TranspilerException;
 import transpiler.TranspilerState;
+import transpiler.tasks.AssertDecorableTask;
 import transpiler.tasks.TaskQueue;
 import transpiler.tasks.TranspilerTask;
+
+import java.util.List;
 
 import static transpiler.tasks.TaskQueue.Priority;
 
 public class DecoratorTranspiler extends ConfluxParserBaseVisitor<String> {
     private static final String ABSTRACT_DECORATOR_TYPE_ID = Environment.reservedId("AbstractDecorator");
-    private static final String DECORATOR_TAG_TYPE_ID = "DecoratorTag";
+    private static final String DECORATOR_REF_TYPE_ID = "DecoratorRef";
     private static final String ADD_DECORATOR_METHOD_ID = Environment.reservedId("addDecorator");
+    private static final String REMOVE_DECORATOR_METHOD_ID = Environment.reservedId("removeDecorator");
     private static final String DECORATOR_HANDLER_TYPE_ID = Environment.reservedId("DecoratorHandler");
     private static final String DECORATOR_HANDLER_VAR_ID = Environment.reservedId("decoratorHandler");
     private static final String HANDLER_ADD_DECORATOR = "addDecorator";
+    private static final String HANDLER_REMOVE_DECORATOR = "removeDecorator";
 
     private static final String CALL_BASE = Environment.reservedId("getPrevious()") + "." +
                                             Environment.reservedId("invoke");
@@ -60,14 +64,19 @@ public class DecoratorTranspiler extends ConfluxParserBaseVisitor<String> {
 
     @Override
     public String visitTypeDeclaration(TypeDeclarationContext ctx) {
-        //TODO: determine if the type can be decorated
-        String typeId = ctx.Identifier().getText();
-        taskQueue.addTask(Priority.ENABLE_TYPE_DECORATION, new EnableTypeDecorationTask(typeId));
-        // create the common super type for decorators if the given type
-        taskQueue.addTask(Priority.MAKE_DECORATOR_CLASSES, new CreateDecoratorSuperClassTask(typeId));
-        if (generateClass) {
-            // add wrapper classes for types that can be decorated
-            taskQueue.addTask(Priority.MAKE_DECORATOR_CLASSES, new CreateDecoratorWrapperTask(typeId));
+        boolean canBeDecorated = ctx.typeModifier().stream().anyMatch(c -> c.DECORABLE() != null);
+        if (canBeDecorated) {
+            String typeId = ctx.Identifier().getText();
+
+            // add decorator methods to the type interface
+            taskQueue.addTask(Priority.ENABLE_TYPE_DECORATION, new EnableTypeDecorationTask(typeId));
+
+            // create the common super type for decorators if the given type
+            taskQueue.addTask(Priority.MAKE_DECORATOR_CLASSES, new CreateDecoratorSuperClassTask(typeId));
+            if (generateClass) {
+                // add wrapper classes for types that can be decorated
+                taskQueue.addTask(Priority.MAKE_DECORATOR_CLASSES, new CreateDecoratorWrapperTask(typeId));
+            }
         }
         return defaultResult();
     }
@@ -83,6 +92,8 @@ public class DecoratorTranspiler extends ConfluxParserBaseVisitor<String> {
                 .addExtendedClass(decoratorSuperClassId(decoratedType))
                 .addImplementedInterface(decoratedType);
 
+        // Make sure type can be decorated
+        taskQueue.addTask(Priority.CHECK_DECORABLE, new AssertTypeCanBeDecorated(decoratorId, decoratedType));
         //Add decorator class to transpiler state
         taskQueue.addTask(Priority.ADD_CLASS, new AddClassTask(decoratorClass));
         return visitDecoratorBody(ctx.decoratorBody()); // add methods and fields to decoratorClass
@@ -133,13 +144,22 @@ public class DecoratorTranspiler extends ConfluxParserBaseVisitor<String> {
     }
 
     @Override
-    public String visitAddDecorator(ConfluxParser.AddDecoratorContext ctx) {
+    public String visitAddDecoratorExpression(AddDecoratorExpressionContext ctx) {
         return "%s.%s(%s.%s(%s))".formatted(
                 expressionTranspiler.visitDecoratedObject(ctx.decoratedObject()),
                 ADD_DECORATOR_METHOD_ID,
                 visitDecoratorId(ctx.decoratorId()),
                 expressionTranspiler.visitMethodId(ctx.methodId()),
                 ctx.parameterList() == null ? "" : expressionTranspiler.visitParameterList(ctx.parameterList())
+        );
+    }
+
+    @Override
+    public String visitRemoveDecoratorStatement(RemoveDecoratorStatementContext ctx) {
+        return "%s.%s(%s);".formatted(
+                expressionTranspiler.visitDecoratedObject(ctx.decoratedObject()),
+                REMOVE_DECORATOR_METHOD_ID,
+                expressionTranspiler.visitDecoratorRef(ctx.decoratorRef())
         );
     }
 
@@ -199,8 +219,9 @@ public class DecoratorTranspiler extends ConfluxParserBaseVisitor<String> {
             for (MethodBuilder method : baseInterface.getMethods()) {
                 boolean isStatic = method.getModifiers().stream().anyMatch(c -> c.toCode().equals("static"));
                 boolean isAddDecoratorMethod = method.getIdentifier().toCode().equals(ADD_DECORATOR_METHOD_ID);
+                boolean isRemoveDecoratorMethod = method.getIdentifier().toCode().equals(REMOVE_DECORATOR_METHOD_ID);
 
-                if (!isStatic && !isAddDecoratorMethod) {
+                if (!isStatic && !isAddDecoratorMethod && !isRemoveDecoratorMethod) {
                     decoratorClass.addMethod(makeReflectedDelegate(method, CALL_BASE));
                 }
             }
@@ -216,6 +237,13 @@ public class DecoratorTranspiler extends ConfluxParserBaseVisitor<String> {
                                                 "', it's missing in the transpiler state");
             }
             decoratedInterface.addMethod(makeAddDecoratorMethod(decoratedTypeId));
+            boolean canSuperTypeBeDecorated = false;
+            for (Code superId : decoratedInterface.getExtendedInterfaces()) {
+                canSuperTypeBeDecorated = canSuperTypeBeDecorated ||
+                                          state.lookupSource(superId.toCode()).accept(new CheckDecorable());
+            }
+            if (!canSuperTypeBeDecorated)
+                decoratedInterface.addMethod(makeRemoveDecoratorMethod());
         }
     }
 
@@ -236,16 +264,29 @@ public class DecoratorTranspiler extends ConfluxParserBaseVisitor<String> {
 
             wrappedInterface.getMethods().forEach(method -> {
                 boolean isAddDecoratorMethod = method.getIdentifier().toCode().equals(ADD_DECORATOR_METHOD_ID);
+                boolean isRemoveDecoratorMethod = method.getIdentifier().toCode().equals(REMOVE_DECORATOR_METHOD_ID);
                 boolean isStatic = method.getModifiers().stream().anyMatch(c -> c.toCode().equals("static"));
 
-                if (!isStatic && !isAddDecoratorMethod) {
+                if (!isStatic && !isAddDecoratorMethod && !isRemoveDecoratorMethod) {
                     wrapperClass.addMethod(makeReflectedDelegate(method, CALL_TOP_DECORATOR));
                 }
                 if (isAddDecoratorMethod) {
-                    MethodBuilder implementation = method.delegateMethod(
-                            DECORATOR_HANDLER_VAR_ID, HANDLER_ADD_DECORATOR, false
-                    );
-                    wrapperClass.addMethod(implementation.addModifier("public"));
+                    MethodBuilder implementation = method.copySignature(false).addModifier("public");
+                    implementation.addStatement("return %s.%s(this, %s);".formatted(
+                            DECORATOR_HANDLER_VAR_ID,
+                            HANDLER_ADD_DECORATOR,
+                            implementation.getParameters().get(0).argId()
+                    ));
+                    wrapperClass.addMethod(implementation);
+                }
+                if (isRemoveDecoratorMethod) {
+                    MethodBuilder implementation = method.copySignature(false).addModifier("public");
+                    implementation.addStatement("%s.%s(this, %s);".formatted(
+                            DECORATOR_HANDLER_VAR_ID,
+                            HANDLER_REMOVE_DECORATOR,
+                            implementation.getParameters().get(0).argId()
+                    ));
+                    wrapperClass.addMethod(implementation);
                 }
             });
             state.addClass(wrapperClass);
@@ -272,10 +313,16 @@ public class DecoratorTranspiler extends ConfluxParserBaseVisitor<String> {
     private static MethodBuilder makeAddDecoratorMethod(String decoratedTypeId) {
         return new MethodBuilder()
                 .addModifier("public").addModifier("default")
-                .setReturnType(DECORATOR_TAG_TYPE_ID).setIdentifier(ADD_DECORATOR_METHOD_ID)
+                .setReturnType(DECORATOR_REF_TYPE_ID).setIdentifier(ADD_DECORATOR_METHOD_ID)
                 .addParameter(decoratorSuperClassId(decoratedTypeId), "decorator")
-                // should be impossible to trigger if type checking is implemented correctly
                 .addStatement("throw new AssertionError(\"This should be unreachable\");");
+    }
+
+    private static MethodBuilder makeRemoveDecoratorMethod() {
+        return new MethodBuilder()
+                .addModifier("public").addModifier("default").setReturnType("void")
+                .setIdentifier(REMOVE_DECORATOR_METHOD_ID)
+                .addParameter(DECORATOR_REF_TYPE_ID, "decoratorRef");
     }
 
     // Implement the given method by providing reflective arguments to the delegateId
@@ -317,6 +364,43 @@ public class DecoratorTranspiler extends ConfluxParserBaseVisitor<String> {
         @Override
         public void run(TranspilerState state) {
             state.addClass(toAdd);
+        }
+    }
+
+    private static class CheckDecorable extends ConfluxParserBaseVisitor<Boolean> {
+        @Override
+        public Boolean visitProgram(ProgramContext ctx) {
+            return ctx.typeDeclaration() != null && visitTypeDeclaration(ctx.typeDeclaration());
+        }
+        @Override
+        public Boolean visitTypeDeclaration(TypeDeclarationContext ctx) {
+            return ctx.typeModifier().stream().anyMatch(c -> c.DECORABLE() != null);
+        }
+    }
+
+    private record AssertTypeCanBeDecorated(String decoratorId, String typeId) implements TranspilerTask {
+        @Override
+        public void run(TranspilerState state) {
+            ProgramContext ctx = state.lookupSource(typeId);
+            if (ctx == null) {
+                throw new TranspilerException("Cannot resolve decorated type '" + typeId +
+                                              "' in decorator declaration for '" + decoratorId + "'");
+            }
+            if (ctx.typeDeclaration() == null) {
+                throw new TranspilerException("Illegal decorated type '" + typeId +
+                                              "' in decorator declaration for '" + decoratorId + "'");
+            }
+            List<TypeModifierContext> l = ctx.typeDeclaration().typeModifier();
+            if (l.stream().anyMatch(c -> c.IMMUTABLE() != null)) {
+                throw new TranspilerException("Illegal decorated type '" + typeId +
+                                              "' in decorator declaration for '" + decoratorId +
+                                              "' (immutable types cannot be decorated)");
+            }
+            if (l.stream().noneMatch(c -> c.DECORABLE() != null)) {
+                throw new TranspilerException("Illegal decorated type '" + typeId +
+                                              "' in decorator declaration for '" + decoratorId +
+                                              "' (" + typeId + "' isn't decorable)");
+            }
         }
     }
 }

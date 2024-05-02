@@ -1,4 +1,4 @@
-type C extends B {
+decorable type C extends B {
    void methodC();
 }
 methods {

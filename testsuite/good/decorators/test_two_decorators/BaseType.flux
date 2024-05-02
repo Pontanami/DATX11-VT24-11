@@ -1,4 +1,4 @@
-type BaseType {
+decorable type BaseType {
    void method1(int arg);
    String method2(String arg);
    int method3(int arg);

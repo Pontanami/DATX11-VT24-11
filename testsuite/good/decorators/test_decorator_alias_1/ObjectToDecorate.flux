@@ -1,4 +1,4 @@
-type ObjectToDecorate {
+decorable type ObjectToDecorate {
    void methodToDecorate();
 }
 methods {

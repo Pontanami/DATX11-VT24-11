@@ -15,10 +15,9 @@ import static transpiler.tasks.TaskQueue.Priority;
 
 // Transpiles everything related to observers:
 public class ObserverTranspiler extends ConfluxParserBaseVisitor<String> {
-    private static final String SUBSCRIBER_TAG_TYPE_ID = "SubscriberTag";
-    private static final String COMPOSITE_TAG_TYPE_ID = "CompositeSubscriberTag";
     private static final String PUBLISH = Environment.reservedId("publish");
     private static final String ADD_SUBSCRIBER = Environment.reservedId("addSubscriber");
+    private static final String REMOVE_SUBSCRIBER = Environment.reservedId("removeSubscriber");
 
     private final TaskQueue taskQueue;
     private ConfluxParserVisitor<String> expressionTranspiler;
@@ -56,8 +55,22 @@ public class ObserverTranspiler extends ConfluxParserBaseVisitor<String> {
 
     @Override
     public String visitPublishStatement(PublishStatementContext ctx) {
-        String explicitEventType = visitExplicitEventType(ctx.explicitEventType());
         String event = ctx.expression().accept(expressionTranspiler);
+        if (ctx.explicitEventTypes() == null) {
+            return makePublishCall(event, null);
+        } else if (ctx.explicitEventTypes().type().size() == 1) {
+            return makePublishCall(event, Environment.boxedId(ctx.explicitEventTypes().type(0).getText()));
+        } else {
+            StringBuilder builder = new StringBuilder().append("{");
+            ctx.explicitEventTypes().type().forEach(type -> {
+                String eventType = Environment.boxedId(type.getText());
+                builder.append(makePublishCall(event, eventType));
+            });
+            return builder.append("}").toString();
+        }
+    }
+
+    private static String makePublishCall(String event, String explicitEventType) {
         return new CodeBuilder()
                 .append(PUBLISH).append("(")
                 .beginConditional(explicitEventType != null)
@@ -69,28 +82,27 @@ public class ObserverTranspiler extends ConfluxParserBaseVisitor<String> {
     }
 
     @Override
-    public String visitAddSubscriber(AddSubscriberContext ctx) {
+    public String visitAddSubscriberStatement(AddSubscriberStatementContext ctx) {
         String publisher = ctx.publisherExpression().accept(expressionTranspiler);
         String subscriber = ctx.subscriberExpression().accept(expressionTranspiler);
         String callback = ctx.subscriberCallback().getText();
 
         if (ctx.explicitEventTypes() == null) {
-            return addSubscriberCall(publisher, subscriber, callback, null);
+            return makeAddSubscriberCall(publisher, subscriber, callback, null);
         } else if (ctx.explicitEventTypes().type().size() == 1) {
             String eventType = Environment.boxedId(ctx.explicitEventTypes().type().get(0).getText());
-            return addSubscriberCall(publisher, subscriber, callback, eventType);
+            return makeAddSubscriberCall(publisher, subscriber, callback, eventType);
         } else {
-            CodeBuilder builder = new CodeBuilder()
-                    .append("new ").append(COMPOSITE_TAG_TYPE_ID).append("(").beginDelimiter(", ");
+            StringBuilder builder = new StringBuilder().append("{ ");
             ctx.explicitEventTypes().type().forEach(type -> {
                 String eventType = Environment.boxedId(type.getText());
-                builder.append(addSubscriberCall(publisher, subscriber, callback, eventType));
+                builder.append(makeAddSubscriberCall(publisher, subscriber, callback, eventType));
             });
-            return builder.endDelimiter().append(")").toCode();
+            return builder.append(" }").toString();
         }
     }
 
-    private String addSubscriberCall(String publisher, String subscriber, String callback, String eventType) {
+    private String makeAddSubscriberCall(String publisher, String subscriber, String callback, String eventType) {
         return new CodeBuilder()
                 .append(publisher).append(".").append(ADD_SUBSCRIBER).append("(")
                 .beginDelimiter(", ")
@@ -102,13 +114,45 @@ public class ObserverTranspiler extends ConfluxParserBaseVisitor<String> {
                         .endConditional()
                         .append(subscriber).append("::").append(callback)
                 ).endDelimiter()
-                .append(")")
+                .append(");")
                 .toCode();
     }
 
     @Override
-    public String visitExplicitEventType(ExplicitEventTypeContext ctx) {
-        return ctx == null ? null : Environment.boxedId(ctx.type().getText());
+    public String visitRemoveSubscriberStatement(RemoveSubscriberStatementContext ctx) {
+        String publisher = ctx.publisherExpression().accept(expressionTranspiler);
+        String subscriber = ctx.subscriberExpression().accept(expressionTranspiler);
+        String callback = ctx.subscriberCallback().getText();
+
+        if (ctx.explicitEventTypes() == null) {
+            return makeRemoveSubscriberCall(publisher, subscriber, callback, null);
+        } else if (ctx.explicitEventTypes().type().size() == 1) {
+            String eventType = Environment.boxedId(ctx.explicitEventTypes().type().get(0).getText());
+            return makeRemoveSubscriberCall(publisher, subscriber, callback, eventType);
+        } else {
+            StringBuilder builder = new StringBuilder().append("{ ");
+            ctx.explicitEventTypes().type().forEach(type -> {
+                String eventType = Environment.boxedId(type.getText());
+                builder.append(makeRemoveSubscriberCall(publisher, subscriber, callback, eventType));
+            });
+            return builder.append(" }").toString();
+        }
+    }
+
+    private String makeRemoveSubscriberCall(String publisher, String subscriber, String callback, String eventType) {
+        return new CodeBuilder()
+                .append(publisher).append(".").append(REMOVE_SUBSCRIBER).append("(")
+                .beginDelimiter(", ")
+                .append(subscriber)
+                .append('"' + callback + '"')
+                .append(new CodeBuilder()
+                        .beginConditional(eventType != null)
+                        .append("(").append(subscriberCallbackType(eventType)).append(") ")
+                        .endConditional()
+                        .append(subscriber).append("::").append(callback)
+                ).endDelimiter()
+                .append(");")
+                .toCode();
     }
 
     // Create the name of the event handler instance variable that the publisher uses
@@ -130,11 +174,13 @@ public class ObserverTranspiler extends ConfluxParserBaseVisitor<String> {
             if (publisher == null)
                 return;
             for (String eventType : eventTypes) {
-                publisher.addMethod(addSubscriberMethod(eventType))
-                         .addMethod(publishMethod(eventType));
+                publisher.addMethod(publishMethod(eventType))
+                         .addMethod(addSubscriberMethod(eventType))
+                         .addMethod(removeSubscriberMethod(eventType));
             }
         }
     }
+
     // Create callback interfaces for the given event types
     private record CallbackInterfaceTask(List<String> eventTypes) implements TranspilerTask {
         @Override
@@ -152,6 +198,7 @@ public class ObserverTranspiler extends ConfluxParserBaseVisitor<String> {
             }
         }
     }
+
     // Add methods and fields to publisher classes
     private record PublisherClassTask(String typeId, String classId) implements TranspilerTask {
         @Override
@@ -163,9 +210,18 @@ public class ObserverTranspiler extends ConfluxParserBaseVisitor<String> {
             List<String> eventTypes = getEventTypes(state);
             for (String eventType : eventTypes) {
                 String handlerId = eventHandlerId(eventType);
+
+                MethodBuilder removeSubMethod = removeSubscriberMethod(eventType).setGenerateBody(true);
+                removeSubMethod.addStatement("%s.%s(%s, %s);".formatted(
+                        eventHandlerId(eventType),
+                        REMOVE_SUBSCRIBER,
+                        removeSubMethod.getParameters().get(0).argId(),
+                        removeSubMethod.getParameters().get(1).argId()
+                ));
                 publisher.addField(handlerVariable(eventType))
                          .addMethod(publishMethod(eventType).delegateMethod(handlerId))
-                         .addMethod(addSubscriberMethod(eventType).delegateMethod(handlerId));
+                         .addMethod(addSubscriberMethod(eventType).delegateMethod(handlerId))
+                         .addMethod(removeSubMethod);
             }
         }
 
@@ -183,7 +239,7 @@ public class ObserverTranspiler extends ConfluxParserBaseVisitor<String> {
     ////////////////////////////////////// Generated Publisher Methods/Fields ///////////////////////////////////////
 
     private static Code handlerVariable(String eventType) {
-        String handlerType = "EventHandler<" + eventType + ">";
+        String handlerType = Environment.reservedId("EventHandler") + "<" + eventType + ">";
         return new CodeBuilder()
                 .beginDelimiter(" ")
                 .append("private final")
@@ -206,10 +262,20 @@ public class ObserverTranspiler extends ConfluxParserBaseVisitor<String> {
     private static MethodBuilder addSubscriberMethod(String eventType) {
         return new MethodBuilder(false)
                 .addModifier("public")
-                .setReturnType(SUBSCRIBER_TAG_TYPE_ID)
+                .setReturnType("void")
                 .setIdentifier(ADD_SUBSCRIBER)
                 .addParameter("Object", "subscriber")
                 .addParameter("String", "callbackName")
                 .addParameter(subscriberCallbackType(eventType), "callback");
+    }
+
+    private static MethodBuilder removeSubscriberMethod(String eventType) {
+        return new MethodBuilder(false)
+                .addModifier("public")
+                .setReturnType("void")
+                .setIdentifier(REMOVE_SUBSCRIBER)
+                .addParameter("Object", "subscriber")
+                .addParameter("String", "callbackName")
+                .addParameter(subscriberCallbackType(eventType), Environment.unusedIdentifier());
     }
 }

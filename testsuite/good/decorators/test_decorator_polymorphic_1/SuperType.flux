@@ -1,4 +1,4 @@
-type SuperType {
+decorable type SuperType {
    int methodToDecorate();
 }
 methods {

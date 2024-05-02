@@ -17,7 +17,7 @@ public class MethodBuilder implements Code {
     private final List<Code> modifiers;
     private final List<Parameter> parameters;
     private final List<Code> statements;
-    private final boolean generateBody;
+    private boolean generateBody;
 
     /**
      * Create a MethodBuilder with generateBody set to true
@@ -60,6 +60,20 @@ public class MethodBuilder implements Code {
     }
 
     /////////////////// Setters ///////////////////
+
+    /**
+     * Set the value of {@code generateBody} to the given value. If the new value of {@code generateBody} is false,
+     * all statements will be cleared from this {@code MethodBuilder}.
+     * @param generateBody the new value for {@code generateBody}
+     * @return this {@code MethodBuilder}, for chaining
+     */
+    public MethodBuilder setGenerateBody(boolean generateBody) {
+        if (!generateBody) {
+            this.statements.clear();
+        }
+        this.generateBody = generateBody;
+        return this;
+    }
 
     public MethodBuilder addModifier(String modifier) {
         return addModifier(fromString(throwOnNull(modifier)));
@@ -159,6 +173,26 @@ public class MethodBuilder implements Code {
             throw new IllegalArgumentException("MethodBuilder: Cannot compare signatures, null identifier");
         }
         return getSignature().equals(other.getSignature());
+    }
+
+    /**
+     * Returns a new {@code MethodBuilder}, that has the same return type, identifier, parameters, and optionally the
+     * same modifiers, as this {@code MethodBuilder}. The changes in the returned {@code MethodBuilder} will not affect
+     * this {@code MethodBuilder} and vice versa.
+     * @param copyModifiers - if true the returned {@code MethodBuilder} will possess the same modifiers as this
+     * {@code MethodBuilder}
+     * @return the copied {@code MethodBuilder}
+     */
+    public MethodBuilder copySignature(boolean copyModifiers) {
+        MethodBuilder result = new MethodBuilder(generateBody)
+                .setReturnType(returnType.toCode())
+                .setIdentifier(identifier.toCode());
+
+        if (copyModifiers) {
+            modifiers.forEach(m -> result.addModifier(m.toCode()));
+        }
+        parameters.forEach(result::addParameter);
+        return result;
     }
 
     /**

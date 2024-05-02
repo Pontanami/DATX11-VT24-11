@@ -8,7 +8,7 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 import transpiler.TranspilerException;
 import transpiler.TranspilerState;
 
-// For a given type assert that all subtypes are immutable
+// For a given type assert that all immediate subtypes are immutable
 public class AssertImmutableTask implements TranspilerTask {
     private final String immutableTypeId;
 
@@ -25,12 +25,7 @@ public class AssertImmutableTask implements TranspilerTask {
     private class AssertImmutableVisitor extends ConfluxParserBaseVisitor<Void> {
         @Override
         public Void visitProgram(ConfluxParser.ProgramContext ctx) {
-            if (ctx.typeDeclaration() != null)
-                return visitTypeDeclaration(ctx.typeDeclaration());
-            else if (ctx.decoratorDeclaration() != null)
-                return visitDecoratorDeclaration(ctx.decoratorDeclaration());
-            else
-                throw new RuntimeException("Unhandled case, program is not a type or decorator");
+            return ctx.typeDeclaration() == null ? null : visitTypeDeclaration(ctx.typeDeclaration());
         }
 
         @Override
@@ -39,23 +34,13 @@ public class AssertImmutableTask implements TranspilerTask {
 
             for (TerminalNode node : ctx.typeExtend().Identifier()) {
                 if (node.toString().equals(immutableTypeId)) { // this type extends the immutable type
-                    if (ctx.typeModifier().IMMUTABLE() != null){
+                    if (ctx.typeModifier().stream().noneMatch(c -> c.IMMUTABLE() != null)) {
                         String id = ctx.Identifier().toString();
-                        throw new TranspilerException("Type '" + id + "' isn't immutable but extends an immutable type");
+                        throw new TranspilerException("Type '" + id + "' isn't immutable but extends immutable type '"
+                                                      + immutableTypeId + "'");
                     } else
                         break;
                 }
-            }
-            return null;
-        }
-
-        @Override
-        public Void visitDecoratorDeclaration(ConfluxParser.DecoratorDeclarationContext ctx) {
-            String decoratedType = ctx.typeId().getText();
-            if (decoratedType.equals(immutableTypeId)) {
-                String decoratorType = ctx.decoratorId().getText();
-                throw new TranspilerException("Illegal decorator '" + decoratorType + "' for type '" + decoratedType +
-                                              "': immutable types cannot be decorated");
             }
             return null;
         }

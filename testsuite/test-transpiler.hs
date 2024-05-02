@@ -34,7 +34,7 @@ executable_name :: FilePath
 executable_name = "../Transpiler.bat"
 
 transpiler_output :: FilePath
-transpiler_output = "transpiler_output"
+transpiler_output = "../testsuite/transpiler_output"
 
 concatMapM :: Monad m => (a -> m [b]) -> [a] -> m [b]
 concatMapM f = fmap concat . mapM f

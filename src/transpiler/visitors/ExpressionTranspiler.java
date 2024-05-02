@@ -1,18 +1,11 @@
 package transpiler.visitors;
 
-import grammar.gen.ConfluxLexer;
 import grammar.gen.ConfluxParser;
 import grammar.gen.ConfluxParserBaseVisitor;
 import java_builder.Code;
 import java_builder.CodeBuilder;
-import org.antlr.v4.runtime.*;
-import org.antlr.v4.runtime.misc.ParseCancellationException;
-import org.antlr.v4.runtime.tree.ParseTree;
-import org.antlr.v4.runtime.tree.TerminalNode;
-import transpiler.Environment;
 import transpiler.TranspilerException;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,15 +13,10 @@ public class ExpressionTranspiler extends DefaultTranspiler {
     private static final String NEW_ARRAY_SIZED = "ofSize";
     private static final String NEW_ARRAY_VALUES = "of";
 
-    private ConfluxParserBaseVisitor<String> observerTranspiler;
     private ConfluxParserBaseVisitor<String> decoratorTranspiler;
 
     public void setDecoratorTranspiler(ConfluxParserBaseVisitor<String> decoratorTranspiler) {
         this.decoratorTranspiler = decoratorTranspiler;
-    }
-
-    public void setObserverTranspiler(ConfluxParserBaseVisitor<String> observerTranspiler) {
-        this.observerTranspiler = observerTranspiler;
     }
 
     @Override
@@ -59,25 +47,20 @@ public class ExpressionTranspiler extends DefaultTranspiler {
     }
 
     @Override
-    public String visitAddSubscriber(ConfluxParser.AddSubscriberContext ctx) {
-        if (observerTranspiler == null) {
-            throw new IllegalStateException("ExpressionTranspiler cannot transpile add subscriber:" +
-                                            "observerTranspiler has not been set");
-        }
-        return observerTranspiler.visitAddSubscriber(ctx);
-    }
-
-    @Override
-    public String visitAddDecorator(ConfluxParser.AddDecoratorContext ctx) {
-        if (decoratorTranspiler == null) {
-            throw new IllegalStateException("ExpressionTranspiler cannot transpile add decorator:" +
-                                            "decoratorTranspiler has not been set");
-        }
-        return decoratorTranspiler.visitAddDecorator(ctx);
+    public String visitAddDecoratorExpression(ConfluxParser.AddDecoratorExpressionContext ctx) {
+        checkDecoratorTranspiler();
+        return decoratorTranspiler.visitAddDecoratorExpression(ctx);
     }
 
     @Override
     public String visitBaseCall(ConfluxParser.BaseCallContext ctx) {
+        checkDecoratorTranspiler();
         return decoratorTranspiler.visitBaseCall(ctx);
+    }
+
+    private void checkDecoratorTranspiler() {
+        if (decoratorTranspiler == null) {
+            throw new IllegalStateException("Cannot transpile expression: decoratorTranspiler has not been set");
+        }
     }
 }

@@ -1,4 +1,4 @@
-type SubType extends SuperType {
+decorable type SubType extends SuperType {
    int methodToDecorate();
 }
 methods {

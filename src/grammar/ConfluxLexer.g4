@@ -28,6 +28,7 @@ DEFAULT : 'default' ;
 SINGLETON : 'singleton' ;
 DECORATOR : 'decorator' ;
 DECORATES : 'decorates' ;
+DECORABLE : 'decorable' ;
 HANDLES : 'handles' ;
 AS : 'as' ;
 VAR : 'var' ;

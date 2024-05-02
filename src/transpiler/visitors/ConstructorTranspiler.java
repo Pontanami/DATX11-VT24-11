@@ -30,7 +30,7 @@ public class ConstructorTranspiler extends ConfluxParserBaseVisitor<Void> {
     public Void visitTypeDeclaration(TypeDeclarationContext ctx) {
         typeId = ctx.Identifier().getText();
         classId = Environment.classId(typeId);
-        canBeDecorated = true; //TODO decide if this is always true
+        canBeDecorated = ctx.typeModifier().stream().anyMatch(c -> c.DECORABLE() != null);
         return ctx.typeBody() == null ? null : visitTypeBody(ctx.typeBody());
     }
 

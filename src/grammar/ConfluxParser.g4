@@ -33,10 +33,10 @@ decoratorId : Identifier ;
 methodType : type | VOID ;
 methodId : Identifier ;
 variableId : Identifier ;
-typeModifier : IMMUTABLE ;
+typeModifier : IMMUTABLE | DECORABLE;
 
 //Declarations --------------------------------------------------------------------------------------------------------
-typeDeclaration : typeModifier? TYPE Identifier typeExtend? typePublishes? typeBody  ;
+typeDeclaration : typeModifier* TYPE Identifier typeExtend? typePublishes? typeBody  ;
 
 typeExtend : EXTENDS Identifier ( COMMA Identifier)*;
 
@@ -101,19 +101,28 @@ decoratorBody : constructorsBlock? attributesBlock? methodBlock? ;
 
 //Statements -------------------------------------------------------------------------------------------------------
 
-statement : expression SEMI
-          | assignment SEMI
-          | declaration SEMI
-          | forStatement
-          | ifStatement
-          | whileStatement
-          | switchStatement
-          | returnStatement
-          | publishStatement
-          | block
-          | BREAK SEMI
-          | CONTINUE SEMI
+statement : javaStatement
+          | observerStatement
+          | removeDecoratorStatement
           ;
+
+javaStatement : expression SEMI
+              | assignment SEMI
+              | declaration SEMI
+              | forStatement
+              | ifStatement
+              | whileStatement
+              | switchStatement
+              | returnStatement
+              | block
+              | BREAK SEMI
+              | CONTINUE SEMI
+              ;
+
+observerStatement : publishStatement
+                  | addSubscriberStatement
+                  | removeSubscriberStatement
+                  ;
 
 assignment : assignmentLeftHandSide ASSIGN expression ;
 
@@ -137,9 +146,23 @@ case : CASE expression COLON statement* ;
 
 default : DEFAULT COLON statement* ;
 
-publishStatement : PUBLISH expression explicitEventType? SEMI ;
+publishStatement : PUBLISH expression explicitEventTypes? SEMI ;
 
-explicitEventType : LPAREN type RPAREN ;
+addSubscriberStatement : publisherExpression ADD SUBSCRIBER subscriberExpression
+                         COLONCOLON subscriberCallback explicitEventTypes? SEMI;
+
+removeSubscriberStatement : publisherExpression REMOVE SUBSCRIBER subscriberExpression
+                            COLONCOLON subscriberCallback explicitEventTypes? SEMI;
+
+explicitEventTypes : LPAREN type (COMMA type)* RPAREN ;
+publisherExpression : referenceExpression ;
+subscriberExpression : referenceExpression ;
+subscriberCallback : Identifier ;
+
+removeDecoratorStatement : decoratedObject REMOVE DECORATOR decoratorRef SEMI;
+
+decoratedObject : referenceExpression ;
+decoratorRef : referenceExpression ;
 
 //Expressions -------------------------------------------------------------------------------------------------------
 expression: LPAREN expression RPAREN
@@ -147,8 +170,7 @@ expression: LPAREN expression RPAREN
           | qualifiedIdentifier
           | methodChain
           | baseCall
-          | addDecorator
-          | addSubscriber
+          | addDecoratorExpression
           | arrayConstructor
           | arrayAccess
           | qualifiedIdentifier (INC | DEC)
@@ -183,16 +205,6 @@ methodCall : qualifiedIdentifier LPAREN parameterList? RPAREN;
 
 baseCall : BASE DOT Identifier LPAREN parameterList? RPAREN;
 
-addSubscriber : publisherExpression ADD SUBSCRIBER subscriberExpression
-                COLONCOLON subscriberCallback explicitEventTypes?;
-
-publisherExpression : referenceExpression ;
-subscriberExpression : referenceExpression ;
-subscriberCallback : Identifier ;
-explicitEventTypes : LPAREN type (COMMA type)* RPAREN ;
-
-addDecorator : decoratedObject ADD DECORATOR decoratorId DOT methodId LPAREN parameterList? RPAREN ;
-
-decoratedObject : referenceExpression ;
+addDecoratorExpression : decoratedObject ADD DECORATOR decoratorId DOT methodId LPAREN parameterList? RPAREN ;
 
 referenceExpression : methodChain | arrayAccess | qualifiedIdentifier ;

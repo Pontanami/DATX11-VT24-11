@@ -4,18 +4,18 @@ main (String[] args) {
    B bc = c;
    A ac = c;
 
-   DecoratorTag ta = c add decorator DecoratorA.new();
-   DecoratorTag tb = bc add decorator DecoratorB.new();
-   DecoratorTag tc = c add decorator DecoratorC.new();
+   DecoratorRef ta = c add decorator DecoratorA.new();
+   DecoratorRef tb = bc add decorator DecoratorB.new();
+   DecoratorRef tc = c add decorator DecoratorC.new();
 
    ac.methodA();
-   tb.deleteDecorator();
+   bc remove decorator tb;
    System.out.println();
 
    bc.methodB();
    System.out.println();
 
-   DecoratorTag ta1 = ac add decorator DecoratorA.new();
+   DecoratorRef ta1 = ac add decorator DecoratorA.new();
    bc add decorator DecoratorA.new();
 
    c.methodC();
@@ -24,8 +24,8 @@ main (String[] args) {
    ac.methodA();
    System.out.println();
 
-   tc.deleteDecorator();
-   ta1.deleteDecorator();
-   ta.deleteDecorator();
+   c remove decorator tc;
+   bc remove decorator ta1;
+   ac remove decorator ta;
    c.methodA();
 }

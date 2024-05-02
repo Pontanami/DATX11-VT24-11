@@ -1,0 +1,1 @@
+decorable immutable type DecorableType extends ImmutableType {}
