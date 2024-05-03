@@ -57,8 +57,10 @@ CONTINUE   : 'continue';
 THIS       : 'this' ;
 BASE       : 'base' ;
 
-NUMBER : SIGN? DIGIT+ ;
-DECIMALNUMBER : SIGN? DIGIT+ [.] DIGIT+ ;
+SIGNED_NUMBER : SIGN DIGIT+ ;
+NUMBER : DIGIT+ ;
+SIGNED_DECIMALNUMBER : SIGN DIGIT+ [.] DIGIT+ ;
+DECIMALNUMBER : DIGIT+ [.] DIGIT+ ;
 
 fragment SIGN: [+-];
 fragment DIGIT : [0-9] ;

@@ -9,7 +9,7 @@ program : (typeDeclaration | decoratorDeclaration) EOF ;
 
 //Type rules
 literals
-    : NUMBER | DECIMALNUMBER | BooleanLiteral | StringLiteral ;
+    : NUMBER | DECIMALNUMBER | SIGNED_NUMBER | SIGNED_DECIMALNUMBER | BooleanLiteral | StringLiteral ;
 
 numericType
     : INT
