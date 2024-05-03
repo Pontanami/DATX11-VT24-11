@@ -29,9 +29,9 @@ else
     CLASSPATH_SEPARATOR := :
 endif
 
-# java source files that make up the transpiler 	TODO: add ../src/transpiler/runtime/decorators/*.java
+# java source files that make up the transpiler
 java_src := $(filter-out %package-info.java, $(wildcard ../src/*.java ../src/java_builder/*.java ../src/runtime/observers/*.java \
-	../src/transpiler/*.java ../src/transpiler/tasks/*.java ../src/transpiler/visitors/*.java))
+	../src/transpiler/*.java ../src/transpiler/tasks/*.java ../src/transpiler/visitors/*.java ../src/runtime/decorators/*.java))
 
 # output location for java compilation (same as IntelliJ uses)
 java_out_dir := ../out/production/DATX11-VT24-11
