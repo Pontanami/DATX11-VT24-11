@@ -1,0 +1,1 @@
+type SubType extends SuperType publishes String {}

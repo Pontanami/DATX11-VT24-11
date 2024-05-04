@@ -1,0 +1,1 @@
+type SuperType publishes int, double {}

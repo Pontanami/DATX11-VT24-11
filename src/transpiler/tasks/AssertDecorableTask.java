@@ -8,7 +8,7 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 import transpiler.TranspilerException;
 import transpiler.TranspilerState;
 
-// For a given type, assert that all immediate subtypes are decorable
+// For a given decorable type, assert that all immediate subtypes are decorable
 public class AssertDecorableTask implements TranspilerTask {
     private final String decorableTypeId;
 
@@ -30,6 +30,7 @@ public class AssertDecorableTask implements TranspilerTask {
 
         @Override
         public Void visitTypeDeclaration(ConfluxParser.TypeDeclarationContext ctx) {
+            if (ctx.Identifier().getText().equals(decorableTypeId)) return null;//this type is the decorable type, abort
             if (ctx.typeExtend() == null) return null; // this type doesn't extend anything, abort
 
             for (TerminalNode node : ctx.typeExtend().Identifier()) {
@@ -38,8 +39,7 @@ public class AssertDecorableTask implements TranspilerTask {
                         String id = ctx.Identifier().toString();
                         throw new TranspilerException("Type '" + id + "' isn't decorable but extends decorable type '"
                                                       + decorableTypeId + "'");
-                    } else
-                        break;
+                    }
                 }
             }
             return null;

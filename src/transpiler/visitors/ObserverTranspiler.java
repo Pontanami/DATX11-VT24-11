@@ -6,6 +6,7 @@ import grammar.gen.ConfluxParserVisitor;
 import java_builder.*;
 import transpiler.Environment;
 import transpiler.TranspilerState;
+import transpiler.tasks.AssertPublishableTask;
 import transpiler.tasks.TaskQueue;
 import transpiler.tasks.TranspilerTask;
 
@@ -47,6 +48,7 @@ public class ObserverTranspiler extends ConfluxParserBaseVisitor<String> {
     public String visitTypePublishes(TypePublishesContext ctx) {
         List<String> eventTypes = ctx.type().stream().map(TypeContext::getText).map(Environment::boxedId).toList();
 
+        taskQueue.addTask(Priority.CHECK_PUBLISHABLE, new AssertPublishableTask(typeId, eventTypes));
         taskQueue.addTask(Priority.MAKE_OBSERVER_INTERFACES, new PublisherInterfaceTask(typeId, eventTypes));
         taskQueue.addTask(Priority.MAKE_OBSERVER_INTERFACES, new CallbackInterfaceTask(eventTypes));
         taskQueue.addTask(Priority.MAKE_OBSERVER_CLASSES, new PublisherClassTask(typeId, classId));
@@ -225,14 +227,9 @@ public class ObserverTranspiler extends ConfluxParserBaseVisitor<String> {
             }
         }
 
-        private List<String> getEventTypes(TranspilerState state) { //TODO: (quick fix solution) could be more robust
-            List<String> eventTypes = new ArrayList<>();
-            state.lookupInterface(typeId).getMethods().forEach(m -> {
-                if (m.getIdentifier().toCode().equals(PUBLISH)) {
-                    eventTypes.add(m.getParameters().get(0).argType());
-                }
-            });
-            return eventTypes;
+        private List<String> getEventTypes(TranspilerState state) {
+            return state.lookupSource(typeId).typeDeclaration().typePublishes().type()
+                        .stream().map(TypeContext::getText).map(Environment::boxedId).toList();
         }
     }
 

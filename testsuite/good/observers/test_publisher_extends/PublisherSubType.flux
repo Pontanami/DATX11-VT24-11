@@ -1,4 +1,4 @@
-type PublisherSubType extends PublisherSuperType publishes Event3 {
+type PublisherSubType extends PublisherSuperType publishes Event1, Event2, Event3 {
    void test1();
    void test2();
    void test3();
