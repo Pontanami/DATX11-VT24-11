@@ -255,8 +255,10 @@ public class DecoratorTranspiler extends ConfluxParserBaseVisitor<String> {
             decoratedInterface.addMethod(makeAddDecoratorMethod(decoratedTypeId));
             boolean canSuperTypeBeDecorated = false;
             for (Code superId : decoratedInterface.getExtendedInterfaces()) {
-                canSuperTypeBeDecorated = canSuperTypeBeDecorated ||
-                                          state.lookupSource(superId.toCode()).accept(new CheckDecorable());
+                if (state.lookupSource(superId.toCode()).accept(new IsDecorableVisitor())) {
+                    canSuperTypeBeDecorated = true;
+                    break;
+                }
             }
             if (!canSuperTypeBeDecorated)
                 decoratedInterface.addMethod(makeRemoveDecoratorMethod());
@@ -383,7 +385,7 @@ public class DecoratorTranspiler extends ConfluxParserBaseVisitor<String> {
         }
     }
 
-    private static class CheckDecorable extends ConfluxParserBaseVisitor<Boolean> {
+    private static class IsDecorableVisitor extends ConfluxParserBaseVisitor<Boolean> {
         @Override
         public Boolean visitProgram(ProgramContext ctx) {
             return ctx.typeDeclaration() != null && visitTypeDeclaration(ctx.typeDeclaration());
