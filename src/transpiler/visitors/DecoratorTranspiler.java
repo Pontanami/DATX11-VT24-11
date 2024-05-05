@@ -1,10 +1,12 @@
 package transpiler.visitors;
 
+import grammar.gen.ConfluxLexer;
 import grammar.gen.ConfluxParser.*;
 import grammar.gen.ConfluxParserBaseVisitor;
 import grammar.gen.ConfluxParserVisitor;
 import java_builder.*;
 import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.tree.TerminalNode;
 import transpiler.Environment;
 import transpiler.TranspilerException;
 import transpiler.TranspilerState;
@@ -169,7 +171,10 @@ public class DecoratorTranspiler extends ConfluxParserBaseVisitor<String> {
 
     @Override
     public String visitBaseCall(BaseCallContext ctx) {
-        validateBaseCall(ctx);
+        if (!isInsideDecorator(ctx)) {
+            throw new TranspilerException("Illegal reference to base: keyword 'base' can only be " +
+                                          "used in decorators");
+        }
         CodeBuilder result = new CodeBuilder().append("super.").append(ctx.Identifier().getText())
                                               .append("(").beginDelimiter(", ");
         if (ctx.parameterList() != null) {
@@ -180,16 +185,28 @@ public class DecoratorTranspiler extends ConfluxParserBaseVisitor<String> {
         return result.endDelimiter().append(")").toCode();
     }
 
-    private void validateBaseCall(BaseCallContext ctx) {
+    @Override
+    public String visitTerminal(TerminalNode node) {
+        boolean isThis = node.getSymbol().getType() == ConfluxLexer.THIS;
+        boolean isQualifier = node.getParent() instanceof QualifiedIdentifierContext;
+        if (isThis && !isQualifier) {
+            if (node.getParent() instanceof ParserRuleContext && isInsideDecorator((ParserRuleContext) node)) {
+                throw new TranspilerException("Keyword 'this' cannot be used as a standalone expression" +
+                                              "inside of a decorator");
+            }
+        }
+        return node.getText();
+    }
+
+    private boolean isInsideDecorator(ParserRuleContext ctx) {
         ParserRuleContext parent = ctx.getParent();
         while (parent != null) {
             if (parent instanceof DecoratorDeclarationContext) {
-                return;
+                return true;
             }
             parent = parent.getParent();
         }
-        throw new TranspilerException("Illegal reference to base: keyword 'base' can only be " +
-                                      "used inside a decorator declaration");
+        return false;
     }
 
     @Override
@@ -390,11 +407,6 @@ public class DecoratorTranspiler extends ConfluxParserBaseVisitor<String> {
                                               "' in decorator declaration for '" + decoratorId + "'");
             }
             List<TypeModifierContext> l = ctx.typeDeclaration().typeModifier();
-            if (l.stream().anyMatch(c -> c.IMMUTABLE() != null)) {
-                throw new TranspilerException("Illegal decorated type '" + typeId +
-                                              "' in decorator declaration for '" + decoratorId +
-                                              "' (immutable types cannot be decorated)");
-            }
             if (l.stream().noneMatch(c -> c.DECORABLE() != null)) {
                 throw new TranspilerException("Illegal decorated type '" + typeId +
                                               "' in decorator declaration for '" + decoratorId +
