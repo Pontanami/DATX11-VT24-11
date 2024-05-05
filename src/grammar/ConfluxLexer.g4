@@ -57,17 +57,13 @@ CONTINUE   : 'continue';
 THIS       : 'this' ;
 BASE       : 'base' ;
 
-SIGNED_NUMBER : SIGN DIGIT+ ;
 NUMBER : DIGIT+ ;
-SIGNED_DECIMALNUMBER : SIGN DIGIT+ [.] DIGIT+ ;
 DECIMALNUMBER : DIGIT+ [.] DIGIT+ ;
-
-fragment SIGN: [+-];
-fragment DIGIT : [0-9] ;
-fragment LETTER : [a-zA-Z] ;
 BooleanLiteral: 'true' | 'false';
 StringLiteral: '"' StringCharacters? '"';
-
+fragment DIGIT : [0-9] ;
+fragment LETTER : [a-zA-Z] ;
+fragment SIGN: [+-];
 fragment StringCharacters: StringCharacter+;
 
 fragment StringCharacter: ~["\\\r\n] | EscapeSequence;

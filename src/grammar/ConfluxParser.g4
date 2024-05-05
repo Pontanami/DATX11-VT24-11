@@ -9,7 +9,7 @@ program : (typeDeclaration | decoratorDeclaration) EOF ;
 
 //Type rules
 literals
-    : NUMBER | DECIMALNUMBER | SIGNED_NUMBER | SIGNED_DECIMALNUMBER | BooleanLiteral | StringLiteral ;
+    : NUMBER | DECIMALNUMBER | BooleanLiteral | StringLiteral ;
 
 numericType
     : INT
@@ -166,6 +166,7 @@ decoratorRef : referenceExpression ;
 
 //Expressions -------------------------------------------------------------------------------------------------------
 expression: LPAREN expression RPAREN
+          | unaryExpression
           | literals
           | qualifiedIdentifier
           | methodChain
@@ -192,6 +193,11 @@ expression: LPAREN expression RPAREN
           | expression AND expression
           | expression OR expression
           ;
+
+unaryExpression
+    : '+' expression
+    | '-' expression
+    ;
 
 arrayConstructor : arrayType DOT Identifier LPAREN parameterList? RPAREN ;
 
