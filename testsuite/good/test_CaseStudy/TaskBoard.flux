@@ -11,16 +11,38 @@ constructors{
 }
 attributes{
     TodoItem[] list;
-    int currentSize = 0;
+    var int currentSize = 0;
 }
 methods{
     void addTask(String text) {
         TodoItem td = TodoItem.newTask(text);
         list[currentSize++] = td;
+        publish listCopy();
     }
     void addScheduledTask(String text, long deadline){
          TodoItem td = TodoItem.newTask(text);
          td add decorator ScheduledItem.new(deadline);
          list[currentSize++] = td;
+         publish listCopy();
+    }
+    void checkTask(int index) {
+        if (index < currentSize) {
+            TodoItem item = list[index];
+            item.check();
+        }
+    }
+    void uncheckTask(int index) {
+        if (index < currentSize) {
+            TodoItem item = list[index];
+            item.check();
+        }
+    }
+
+    TodoItem[] listCopy() {
+        TodoItem newList = TodoItem[].ofSize(currentSize);
+        for (var int i = 0; i < currentSize; i++) {
+            newList[i] = list[i];
+        }
+        return newList;
     }
 }

@@ -1,4 +1,4 @@
-decorator ScheduledItem decorates ToDoItem
+decorator ScheduledItem decorates TodoItem
 constructors {
     new(long deadline) {
         this.deadline = deadline;

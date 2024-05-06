@@ -32,6 +32,7 @@ DECORABLE : 'decorable' ;
 HANDLES : 'handles' ;
 AS : 'as' ;
 VAR : 'var' ;
+IMPORT : 'import' ;
 
 PUBLISHES : 'publishes' ;
 PUBLISH : 'publish' ;

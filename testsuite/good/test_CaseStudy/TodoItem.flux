@@ -1,4 +1,4 @@
-type TodoItem{
+decorable type TodoItem{
    void check();
    void uncheck();
    String getText();
@@ -10,5 +10,11 @@ constructors
     }
 }
 attributes{
+    var boolean done;
     String text;
+}
+methods {
+    String getText() { return text; }
+    void check() { done = true; }
+    void uncheck() { done = false; }
 }

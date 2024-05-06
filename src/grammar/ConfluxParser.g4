@@ -5,7 +5,7 @@ options{
     tokenVocab=ConfluxLexer;
 }
 
-program : (typeDeclaration | decoratorDeclaration) EOF ;
+program : importDeclaration* (typeDeclaration | decoratorDeclaration) EOF ;
 
 //Type rules
 literals
@@ -37,6 +37,8 @@ typeModifier : IMMUTABLE | DECORABLE;
 
 //Declarations --------------------------------------------------------------------------------------------------------
 typeDeclaration : typeModifier* TYPE Identifier typeExtend? typePublishes? typeBody  ;
+
+importDeclaration : IMPORT Identifier (DOT Identifier)* SEMI;
 
 typeExtend : EXTENDS Identifier ( COMMA Identifier)*;
 
