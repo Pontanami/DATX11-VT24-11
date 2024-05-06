@@ -8,7 +8,7 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 import transpiler.TranspilerException;
 import transpiler.TranspilerState;
 
-// For a given type assert that all immediate subtypes are immutable
+// For a given immutable type assert that all immediate subtypes are immutable
 public class AssertImmutableTask implements TranspilerTask {
     private final String immutableTypeId;
 
@@ -30,6 +30,7 @@ public class AssertImmutableTask implements TranspilerTask {
 
         @Override
         public Void visitTypeDeclaration(ConfluxParser.TypeDeclarationContext ctx) {
+            if (ctx.Identifier().getText().equals(immutableTypeId)) return null;//this type is the immutable type, abort
             if (ctx.typeExtend() == null) return null; // this type doesn't extend anything, abort
 
             for (TerminalNode node : ctx.typeExtend().Identifier()) {
@@ -38,8 +39,7 @@ public class AssertImmutableTask implements TranspilerTask {
                         String id = ctx.Identifier().toString();
                         throw new TranspilerException("Type '" + id + "' isn't immutable but extends immutable type '"
                                                       + immutableTypeId + "'");
-                    } else
-                        break;
+                    }
                 }
             }
             return null;

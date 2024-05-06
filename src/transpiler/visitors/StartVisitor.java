@@ -60,7 +60,7 @@ public class StartVisitor extends ConfluxParserBaseVisitor<Void> {
         if (!typeId.equals(typeFileName)) {
             throw new TranspilerException("Type identifier must be the same as the file name");
         }
-        validateModifiers(ctx.typeModifier(), typeId);
+        validateModifiers(ctx.typeModifier(), typeId, ctx.typePublishes() != null);
 
         ctx.accept(interfaceTranspiler);
         ctx.accept(observerTranspiler);
@@ -133,7 +133,7 @@ public class StartVisitor extends ConfluxParserBaseVisitor<Void> {
         this.typeFileName = typeFileName;
     }
 
-    private void validateModifiers(List<TypeModifierContext> typeModifiers, String typeId) {
+    private void validateModifiers(List<TypeModifierContext> typeModifiers, String typeId, boolean isPublisher) {
         int immutable = 0;
         int decorable = 0;
         for (TypeModifierContext ctx : typeModifiers) {
@@ -141,9 +141,13 @@ public class StartVisitor extends ConfluxParserBaseVisitor<Void> {
             decorable += ctx.DECORABLE() == null ? 0 : 1;
         }
         if (immutable > 1 || decorable > 1)
-            throw new TranspilerException("Duplicate modifier for type '" + typeId + "'");
+            throw new TranspilerException("Duplicate modifiers for type '" + typeId + "'");
         if (immutable == 1 && decorable == 1) {
-            throw new TranspilerException("Illegal modifier combination 'decorable' and 'immutable'");
+            throw new TranspilerException("Illegal modifier combination 'decorable' and 'immutable' for type '" +
+                                          typeId + "'");
+        }
+        if (immutable == 1 && isPublisher) {
+            throw new TranspilerException("Illegal modifier 'immutable' for publisher type '" + typeId + "'");
         }
         if (immutable > 0)
             taskQ.addTask(TaskQueue.Priority.CHECK_IMMUTABLE, new AssertImmutableTask(typeId));

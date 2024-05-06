@@ -18,6 +18,7 @@ public class TaskQueue {
         ADD_MAIN_CLASS,
         CHECK_IMMUTABLE,
         CHECK_DECORABLE,
+        CHECK_PUBLISHABLE,
         MAKE_CONSTRUCTORS,
         MAKE_OBSERVER_INTERFACES,
         ENABLE_TYPE_DECORATION,

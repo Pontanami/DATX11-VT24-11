@@ -1,9 +1,11 @@
 package transpiler.visitors;
 
+import grammar.gen.ConfluxLexer;
 import grammar.gen.ConfluxParser;
 import grammar.gen.ConfluxParserBaseVisitor;
 import java_builder.Code;
 import java_builder.CodeBuilder;
+import org.antlr.v4.runtime.tree.TerminalNode;
 import transpiler.TranspilerException;
 
 import java.util.ArrayList;
@@ -56,6 +58,14 @@ public class ExpressionTranspiler extends DefaultTranspiler {
     public String visitBaseCall(ConfluxParser.BaseCallContext ctx) {
         checkDecoratorTranspiler();
         return decoratorTranspiler.visitBaseCall(ctx);
+    }
+
+    @Override
+    public String visitTerminal(TerminalNode node) {
+        if (node.getSymbol().getType() == ConfluxLexer.THIS) {
+            return decoratorTranspiler.visitTerminal(node);
+        }
+        return super.visitTerminal(node);
     }
 
     private void checkDecoratorTranspiler() {
