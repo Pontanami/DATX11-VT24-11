@@ -7,7 +7,7 @@ main(String[] args){
 
     tb add subscriber td::displayItems;
 
-    for (int i = 0; i < args.length; i++) {
+    for (var int i = 0; i < args.length; i++) {
         String arg = args[i];
         if (arg.matches("\\d")) {
             tb.addScheduledTask(args[i+ 1], Long.parseLong(arg));
