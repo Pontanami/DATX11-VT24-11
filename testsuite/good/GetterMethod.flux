@@ -6,6 +6,6 @@ type GetterMethod{
 attributes{
     var String text as getText;
     int number = 3, number2 = 8;
-    float ps = 5.5 as getPreciseNumber;
+    float ps = 5.5 + 2.3 as getPreciseNumber;
     var boolean status as getStatus;
 }

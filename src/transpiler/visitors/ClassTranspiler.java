@@ -106,6 +106,7 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
         mB.setIdentifier(methodId);
         mB.setReturnType(returnType);
         mB.addStatement("return this." + aD.declaration().declarationPart(0).Identifier() + ";");
+        final String interfaceId = this.interfaceId;
         taskQueue.addTask(TaskQueue.Priority.ADD_GETTER, state -> {
             boolean found = false;
             for (MethodBuilder m : state.lookupInterface(interfaceId).getMethods()) {
@@ -114,7 +115,7 @@ public class ClassTranspiler extends ConfluxParserBaseVisitor<Void> {
                 }
             }
             if (!found) {
-                throw new TranspilerException("Getter method not present in interface");
+                throw new TranspilerException("Getter method '" + methodId + "' not present in interface");
             }
         } );
         return mB;

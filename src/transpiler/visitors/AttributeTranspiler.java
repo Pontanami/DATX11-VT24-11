@@ -9,6 +9,7 @@ import java.util.Objects;
 
 
 public class AttributeTranspiler extends DefaultTranspiler {
+    private boolean convertFloat = false;
 
     @Override
     public String visitAttributeDeclaration(ConfluxParser.AttributeDeclarationContext ctx) {
@@ -34,9 +35,9 @@ public class AttributeTranspiler extends DefaultTranspiler {
             result.append("final ");
         }
         result.append(visit(ctx.declaration().type()));
-        result.append(" ").append(visitDeclarationPart(ctx.declaration().declarationPart(i)));
-        if(Objects.equals(ctx.declaration().type().getText(), "float")){result.append("F");}
-        result.append(";").append(" ");
+
+        convertFloat = Objects.equals(ctx.declaration().type().getText(), "float");
+        result.append(" ").append(visitDeclarationPart(ctx.declaration().declarationPart(i))).append(";");
     }
 
     private String generateGetter(ConfluxParser.AttributeDeclarationContext ctx) {
@@ -64,12 +65,19 @@ public class AttributeTranspiler extends DefaultTranspiler {
         result.append(ctx.Identifier().getText());
 
         if (ctx.ASSIGN() != null) {
-            result.append(" = ").append(visit(ctx.expression()));
+            result.append(" = ").append(visitExpression(ctx.expression()));
         }
 
         return result.toString();
     }
 
-
+    @Override
+    public String visitLiterals(ConfluxParser.LiteralsContext ctx) {
+        String text = super.visitLiterals(ctx);
+        if (convertFloat && (ctx.DECIMALNUMBER() != null || ctx.SIGNED_DECIMALNUMBER() != null)) {
+            text += "F";
+        }
+        return text;
+    }
 }
 
