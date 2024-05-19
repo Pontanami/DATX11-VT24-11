@@ -1,6 +1,6 @@
 type TaskBoard publishes TodoItem[] {
     void addTask(String text);
-    void addScheduledTask(String text, long deadline);
+    void addScheduledTask(String text, String deadline);
     void checkTask(int index);
     void uncheckTask(int index);
 }
@@ -19,7 +19,7 @@ methods{
         list[currentSize++] = td;
         publish listCopy();
     }
-    void addScheduledTask(String text, long deadline){
+    void addScheduledTask(String text, String deadline){
          TodoItem td = TodoItem.newTask(text);
          td add decorator ScheduledItem.new(deadline);
          list[currentSize++] = td;

@@ -1,11 +1,11 @@
 decorator ScheduledItem decorates TodoItem
 constructors {
-    new(long deadline) {
+    new(String deadline) {
         this.deadline = deadline;
     }
 }
 attributes {
-    long deadline;
+    String deadline;
 }
 methods {
     String getText() {
