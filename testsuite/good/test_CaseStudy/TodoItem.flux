@@ -18,7 +18,7 @@ methods {
         String status;
         if (done) status = "completed";
         else status = "not completed";
-        return text + "(" + status + ")";
+        return text + " (" + status + ")";
     }
     void check() { done = true; }
     void uncheck() { done = false; }
