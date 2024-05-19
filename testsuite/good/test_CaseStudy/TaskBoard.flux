@@ -39,7 +39,7 @@ methods{
     }
 
     TodoItem[] listCopy() {
-        TodoItem newList = TodoItem[].ofSize(currentSize);
+        TodoItem[] newList = TodoItem[].ofSize(currentSize);
         for (var int i = 0; i < currentSize; i++) {
             newList[i] = list[i];
         }
