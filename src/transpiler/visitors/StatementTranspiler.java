@@ -131,7 +131,7 @@ public class StatementTranspiler extends ConfluxParserBaseVisitor<Code> {
     }
 
     private CodeBuilder addNestedStatements(CodeBuilder builder, StatementContext stm) {
-        if (stm.javaStatement() != null || stm.javaStatement().block() != null) {
+        if (stm.javaStatement() != null && stm.javaStatement().block() != null) {
             List<Code> stms = stm.javaStatement().block().statement().stream().map(this::visitStatement).toList();
             builder.append(" {").appendLine(1, stms).appendLine(0, "}");
         } else {
