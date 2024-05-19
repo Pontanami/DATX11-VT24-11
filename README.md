@@ -1,5 +1,12 @@
 # DATX11-VT24-11
 
+This is a transpiler for the programming language Conflux, using Java as the target language.
+The parser is generated using ANTLR, while static checking and code generation are implemented in Java.
+The Makefile located in src can be used to compile the transpiler.
+It requires that the [ANTLR jar file](https://www.antlr.org/download.html) (version 4) is located in the root directory, and named `antlr-4.13.1-complete.jar`.
+The Makefile creates a jar file named `conflux.jar` that can be used to run the transpiler.
+It requires that the ANTLR jar file is located in the same directory as itself and is named `antlr-4.13.1-complete.jar`.
+
  ## Test Suite
 
 The test suite is divided into three subfolders. Any file contained in these folders that has a `.flux` extension is considered a test file.
@@ -14,4 +21,4 @@ The three subfolders are:
 
 * /bad-runtime: Contains tests that should pass parsing and type checking but fail during runtime. Executing the transpiled files should produce output that includes the text "Exception" (on std err or std out).
 
- The test program `test-transpiler` compiles the transpiler (using a makefile), and runs all the tests included in the test suite. To see the options, run the program with the help flag -h. The options can be used, for instance, to only run a subset of the tests or print additional debugging information.
+ The test program `test-transpiler` compiles the transpiler (using the makefile), and runs all the tests included in the test suite. To see the options, run the program with the help flag -h. The options can be used, for instance, to only run a subset of the tests or print additional debugging information.

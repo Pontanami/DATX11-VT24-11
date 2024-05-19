@@ -105,13 +105,14 @@ public class ObserverTranspiler extends ConfluxParserBaseVisitor<String> {
     }
 
     private String makeAddSubscriberCall(String publisher, String subscriber, String callback, String eventType) {
+        eventType = eventType == null ? "" : eventType;
         return new CodeBuilder()
                 .append(publisher).append(".").append(ADD_SUBSCRIBER).append("(")
                 .beginDelimiter(", ")
                 .append(subscriber)
                 .append('"' + callback + '"')
                 .append(new CodeBuilder()
-                        .beginConditional(eventType != null)
+                        .beginConditional(!eventType.isEmpty())
                         .append("(").append(subscriberCallbackType(eventType)).append(") ")
                         .endConditional()
                         .append(subscriber).append("::").append(callback)
@@ -142,13 +143,14 @@ public class ObserverTranspiler extends ConfluxParserBaseVisitor<String> {
     }
 
     private String makeRemoveSubscriberCall(String publisher, String subscriber, String callback, String eventType) {
+        eventType = eventType == null ? "" : eventType;
         return new CodeBuilder()
                 .append(publisher).append(".").append(REMOVE_SUBSCRIBER).append("(")
                 .beginDelimiter(", ")
                 .append(subscriber)
                 .append('"' + callback + '"')
                 .append(new CodeBuilder()
-                        .beginConditional(eventType != null)
+                        .beginConditional(!eventType.isEmpty())
                         .append("(").append(subscriberCallbackType(eventType)).append(") ")
                         .endConditional()
                         .append(subscriber).append("::").append(callback)
@@ -159,11 +161,22 @@ public class ObserverTranspiler extends ConfluxParserBaseVisitor<String> {
 
     // Create the name of the event handler instance variable that the publisher uses
     private static String eventHandlerId(String eventType) {
-        return Environment.reservedId(eventType + "Handler");
+        return Environment.reservedId(makeTypeId(eventType) + "Handler");
     }
     // Create the identifier of the interface for subscriber callbacks for the given event
     private static String subscriberCallbackType(String eventType) {
-        return Environment.reservedId(eventType + "Callback");
+        return Environment.reservedId(makeTypeId(eventType) + "Callback");
+    }
+
+    private static String makeTypeId(String id) {
+        if (id.contains("[")) {
+            int dims = 0;
+            for (char c : id.toCharArray()) {
+                if (c == '[') dims++;
+            }
+            return id.replaceAll("[\\[\\]]", "") + dims + "DArray";
+        }
+        return id;
     }
 
     ///////////////////////////////////////// Observer tasks /////////////////////////////////////////////////
